@@ -1,9 +1,10 @@
 use {Camera, Error, Result};
-use iron::{IronResult, Request, Response, status};
+use iron::{Request, Response, status};
 use iron::headers::AccessControlAllowOrigin;
 use iron::mime::Mime;
 use router::Router;
 use serde_json;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -11,13 +12,17 @@ use toml;
 
 /// Creates a new API router.
 pub fn create_router(config: &Config) -> Router {
-    let server = Server::new(config);
-    router!(
-        cameras: get "/cameras" => move |request: &mut Request| {
-            info!("/cameras");
-            server.cameras(request)
-        }
-    )
+    let world = World::new(config);
+    let mut router = Router::new();
+    let cameras = world.cameras.clone();
+    router.get("/cameras",
+               move |_: &mut Request| {
+        Ok(json_response(&itry!(serde_json::to_string(&cameras.iter()
+                                                           .map(|(_, camera)| camera)
+                                                           .collect::<Vec<_>>()))))
+    },
+               "cameras");
+    router
 }
 
 fn json_response(json: &str) -> Response {
@@ -37,8 +42,9 @@ struct CameraConfig {
     name: String,
 }
 
-struct Server {
-    cameras: Vec<Camera>,
+#[derive(Clone, Debug)]
+struct World {
+    cameras: HashMap<String, Camera>,
 }
 
 impl Config {
@@ -57,17 +63,16 @@ impl CameraConfig {
     }
 }
 
-impl Server {
-    fn new(config: &Config) -> Server {
-        Server {
+impl World {
+    fn new(config: &Config) -> World {
+        World {
             cameras: config.cameras
                 .iter()
-                .map(|config| config.to_camera())
+                .map(|config| {
+                         let camera = config.to_camera();
+                         (camera.name().to_string(), camera)
+                     })
                 .collect(),
         }
-    }
-
-    fn cameras(&self, _: &mut Request) -> IronResult<Response> {
-        Ok(json_response(&itry!(serde_json::to_string(&self.cameras))))
     }
 }

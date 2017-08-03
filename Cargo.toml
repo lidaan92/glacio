@@ -1,0 +1,15 @@
+[package]
+name = "glacio"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+iron = "*"
+router = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+
+[[bin]]
+name = "glacio-api"
+doc = false

@@ -1,12 +1,12 @@
-use iron::{Request, IronResult, Response, status};
+use {Camera, Error, Result};
+use iron::{IronResult, Request, Response, status};
 use iron::mime::Mime;
 use router::Router;
-use std::path::Path;
-use std::fs::File;
 use serde_json;
-use {Error, Camera, Result};
-use toml;
+use std::fs::File;
 use std::io::Read;
+use std::path::Path;
+use toml;
 
 /// Creates a new API router.
 pub fn create_router(config: &Config) -> Router {

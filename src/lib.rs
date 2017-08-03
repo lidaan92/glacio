@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate iron;
 #[macro_use]
+extern crate log;
+#[macro_use]
 extern crate router;
 #[macro_use]
 extern crate serde_derive;

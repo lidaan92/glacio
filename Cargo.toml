@@ -5,7 +5,9 @@ authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
 
 [dependencies]
 docopt = "*"
+env_logger = "*"
 iron = "*"
+log = "*"
 router = "*"
 serde = "*"
 serde_derive = "*"

@@ -1,4 +1,5 @@
 extern crate docopt;
+extern crate env_logger;
 extern crate glacio;
 extern crate iron;
 #[macro_use]
@@ -27,6 +28,7 @@ struct Args {
 }
 
 fn main() {
+    env_logger::init().unwrap();
     let args: Args = Docopt::new(USAGE).and_then(|d| d.deserialize()).unwrap_or_else(|e| e.exit());
     let config = Config::from_path(args.arg_config).unwrap();
     Iron::new(glacio::api::create_router(&config)).http(args.flag_addr).unwrap();

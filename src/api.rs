@@ -1,5 +1,6 @@
 use {Camera, Error, Result};
 use iron::{IronResult, Request, Response, status};
+use iron::headers::AccessControlAllowOrigin;
 use iron::mime::Mime;
 use router::Router;
 use serde_json;
@@ -10,13 +11,20 @@ use toml;
 
 /// Creates a new API router.
 pub fn create_router(config: &Config) -> Router {
-    let world = World::new(config);
-    router!(cameras: get "/cameras" => move |request: &mut Request| world.cameras(request))
+    let server = Server::new(config);
+    router!(
+        cameras: get "/cameras" => move |request: &mut Request| {
+            info!("/cameras");
+            server.cameras(request)
+        }
+    )
 }
 
 fn json_response(json: &str) -> Response {
     let content_type = "application/json".parse::<Mime>().unwrap();
-    Response::with((content_type, status::Ok, json))
+    let mut response = Response::with((content_type, status::Ok, json));
+    response.headers.set(AccessControlAllowOrigin::Any);
+    response
 }
 
 #[derive(Debug, Deserialize)]
@@ -29,7 +37,7 @@ struct CameraConfig {
     name: String,
 }
 
-struct World {
+struct Server {
     cameras: Vec<Camera>,
 }
 
@@ -49,9 +57,9 @@ impl CameraConfig {
     }
 }
 
-impl World {
-    fn new(config: &Config) -> World {
-        World {
+impl Server {
+    fn new(config: &Config) -> Server {
+        Server {
             cameras: config.cameras
                 .iter()
                 .map(|config| config.to_camera())

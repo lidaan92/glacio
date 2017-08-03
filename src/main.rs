@@ -22,12 +22,12 @@ Options:
 
 #[derive(Debug, Deserialize)]
 struct Args {
-    config: String,
-    addr: String,
+    arg_config: String,
+    flag_addr: String,
 }
 
 fn main() {
     let args: Args = Docopt::new(USAGE).and_then(|d| d.deserialize()).unwrap_or_else(|e| e.exit());
-    let config = Config::from_path(args.config).unwrap();
-    Iron::new(glacio::api::create_router(&config)).http(args.addr).unwrap();
+    let config = Config::from_path(args.arg_config).unwrap();
+    Iron::new(glacio::api::create_router(&config)).http(args.flag_addr).unwrap();
 }

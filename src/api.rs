@@ -1,22 +1,30 @@
-use iron::{self, Request, IronResult, Response};
+use iron::{Request, IronResult, Response, status};
+use iron::mime::Mime;
 use router::Router;
+use serde_json;
+use Camera;
 
 /// Creates a new API router.
 pub fn create_router() -> Router {
-    let handler = Handler::new();
-    router!(cameras: get "/cameras" => handler)
+    let world = World::new();
+    router!(cameras: get "/cameras" => move |request: &mut Request| world.cameras(request))
 }
 
-struct Handler;
+fn json_response(json: &str) -> Response {
+    let content_type = "application/json".parse::<Mime>().unwrap();
+    Response::with((content_type, status::Ok, json))
+}
 
-impl Handler {
-    fn new() -> Handler {
-        Handler
+struct World {
+    cameras: Vec<Camera>,
+}
+
+impl World {
+    fn new() -> World {
+        World { cameras: Vec::new() }
     }
-}
 
-impl iron::Handler for Handler {
-    fn handle(&self, _: &mut Request) -> IronResult<Response> {
-        unimplemented!()
+    fn cameras(&self, _: &mut Request) -> IronResult<Response> {
+        Ok(json_response(&itry!(serde_json::to_string(&self.cameras))))
     }
 }

@@ -10,6 +10,7 @@ router = "*"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
+toml = "*"
 
 [[bin]]
 name = "glacio-api"

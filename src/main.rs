@@ -31,5 +31,5 @@ fn main() {
     env_logger::init().unwrap();
     let args: Args = Docopt::new(USAGE).and_then(|d| d.deserialize()).unwrap_or_else(|e| e.exit());
     let config = Config::from_path(args.arg_config).unwrap();
-    Iron::new(glacio::api::create_router(&config)).http(args.flag_addr).unwrap();
+    Iron::new(glacio::api::create_handler(&config)).http(args.flag_addr).unwrap();
 }

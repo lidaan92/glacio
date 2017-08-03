@@ -43,12 +43,18 @@ impl Config {
     }
 }
 
+impl CameraConfig {
+    fn to_camera(&self) -> Camera {
+        Camera::new(&self.name)
+    }
+}
+
 impl World {
     fn new(config: &Config) -> World {
         World {
             cameras: config.cameras
                 .iter()
-                .map(|camera| Camera::new(&camera.name))
+                .map(|config| config.to_camera())
                 .collect(),
         }
     }

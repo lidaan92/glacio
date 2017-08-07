@@ -92,10 +92,7 @@ impl Config {
 
 impl CameraConfig {
     fn to_camera(&self) -> Camera {
-        let mut camera = Camera::new(&self.path);
-        camera.set_name(&self.name);
-        camera.set_description(&self.description);
-        camera
+        Camera::new(&self.path).set_name(&self.name).set_description(&self.description)
     }
 }
 

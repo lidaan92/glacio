@@ -4,7 +4,8 @@ use iron::Url;
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
-const DEFAULT_IMAGE_EXTENSIONS: &'static [&'static str] = &[".jpg"];
+const DEFAULT_IMAGE_EXTENSIONS: &'static [&'static str] = &["jpg"];
+const DEFAULT_IMAGE_SERVER: &'static str = "http://iridiumcam.lidar.io";
 
 /// A remote camera that transmits pictures back to home.
 #[derive(Clone, Debug)]
@@ -13,11 +14,16 @@ pub struct Camera {
     description: String,
     path: PathBuf,
     image_extensions: Vec<OsString>,
+    image_server: Url,
+    document_root: PathBuf,
 }
 
 /// An image on the filesystem.
 #[derive(Debug)]
-pub struct Image;
+pub struct Image {
+    pub url: Url,
+    pub datetime: DateTime<Utc>,
+}
 
 impl Camera {
     /// Creates a new camera that references the given local directory.
@@ -40,26 +46,31 @@ impl Camera {
             description: String::new(),
             path: path.as_ref().to_path_buf(),
             image_extensions: DEFAULT_IMAGE_EXTENSIONS.iter().map(|&s| s.into()).collect(),
+            image_server: Url::parse(DEFAULT_IMAGE_SERVER).unwrap(),
+            document_root: path.as_ref()
+                .parent()
+                .unwrap_or(&PathBuf::new())
+                .to_path_buf(),
         }
     }
 
     /// Returns this camera's name.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use glacio::Camera;
-    /// let mut camera = Camera::new("");
-    /// camera.set_name("My great camera");
-    /// assert_eq!("My great camera", camera.name());
-    /// ```
     pub fn name(&self) -> &str {
         &self.name
     }
 
     /// Sets this camera's name.
-    pub fn set_name(&mut self, name: &str) {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::Camera;
+    /// let camera = Camera::new("").set_name("ATLAS_CAM");
+    /// assert_eq!("ATLAS_CAM", camera.name());
+    /// ```
+    pub fn set_name(mut self, name: &str) -> Camera {
         self.name = name.to_string();
+        self
     }
 
     /// Returns this camera's description.
@@ -68,8 +79,9 @@ impl Camera {
     }
 
     /// Sets this camera's description.
-    pub fn set_description(&mut self, description: &str) {
+    pub fn set_description(mut self, description: &str) -> Camera {
         self.description = description.to_string();
+        self
     }
 
     /// Returns this camera's path.
@@ -93,7 +105,7 @@ impl Camera {
 
     fn create_image(&self, path: &Path) -> Option<Result<Image>> {
         path.extension().and_then(|extension| if self.is_valid_image_extension(extension) {
-                                      Some(Image::new(path))
+                                      unimplemented!()
                                   } else {
                                       None
                                   })
@@ -101,19 +113,5 @@ impl Camera {
 
     fn is_valid_image_extension(&self, extension: &OsStr) -> bool {
         self.image_extensions.iter().any(|valid_extension| extension == valid_extension)
-    }
-}
-
-impl Image {
-    fn new<P: AsRef<Path>>(path: P) -> Result<Image> {
-        unimplemented!()
-    }
-
-    fn url(&self) -> Url {
-        unimplemented!()
-    }
-
-    fn datetime(&self) -> DateTime<Utc> {
-        unimplemented!()
     }
 }

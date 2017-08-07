@@ -60,7 +60,7 @@ pub struct Config {
 struct CameraConfig {
     name: String,
     description: String,
-    directory: String,
+    path: String,
 }
 
 /// A summary of this camera's information.
@@ -92,7 +92,10 @@ impl Config {
 
 impl CameraConfig {
     fn to_camera(&self) -> Camera {
-        unimplemented!()
+        let mut camera = Camera::new(&self.path);
+        camera.set_name(&self.name);
+        camera.set_description(&self.description);
+        camera
     }
 }
 

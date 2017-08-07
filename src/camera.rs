@@ -44,13 +44,32 @@ impl Camera {
     }
 
     /// Returns this camera's name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::Camera;
+    /// let mut camera = Camera::new("");
+    /// camera.set_name("My great camera");
+    /// assert_eq!("My great camera", camera.name());
+    /// ```
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    /// Sets this camera's name.
+    pub fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
     }
 
     /// Returns this camera's description.
     pub fn description(&self) -> &str {
         &self.description
+    }
+
+    /// Sets this camera's description.
+    pub fn set_description(&mut self, description: &str) {
+        self.description = description.to_string();
     }
 
     /// Returns this camera's path.

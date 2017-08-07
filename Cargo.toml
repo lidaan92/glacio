@@ -16,7 +16,3 @@ serde_derive = "*"
 serde_json = "*"
 toml = "*"
 url = "*"
-
-[[bin]]
-name = "glacio-api"
-doc = false

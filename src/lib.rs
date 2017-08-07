@@ -9,6 +9,8 @@ pub use camera::{Camera, Image};
 pub enum Error {
     /// Wrapper around `chrono::ParseError`.
     ChronoParse(chrono::ParseError),
+    /// Invalid image filename.
+    ImageFilename(String),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
     /// Wrapper around `std::path::StripPrefixError`.
@@ -45,6 +47,7 @@ impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::ChronoParse(ref err) => err.description(),
+            Error::ImageFilename(_) => "invalid image filename",
             Error::Io(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
             Error::UrlParse(ref err) => err.description(),
@@ -56,6 +59,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Error::ChronoParse(ref err) => err.fmt(f),
+            Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
             Error::Io(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),
             Error::UrlParse(ref err) => err.fmt(f),

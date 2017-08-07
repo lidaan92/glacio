@@ -1,8 +1,8 @@
-use Result;
-use chrono::{DateTime, Utc};
-use iron::Url;
+use {Error, Result};
+use chrono::{DateTime, TimeZone, Utc};
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
+use url::Url;
 
 const DEFAULT_IMAGE_EXTENSIONS: &'static [&'static str] = &["jpg"];
 const DEFAULT_IMAGE_SERVER: &'static str = "http://iridiumcam.lidar.io";
@@ -84,13 +84,8 @@ impl Camera {
         self
     }
 
-    /// Returns this camera's path.
-    pub fn path(&self) -> &Path {
-        &self.path
-    }
-
     fn images(&self) -> Result<Vec<Image>> {
-        self.path()
+        self.path
             .read_dir()?
             .filter_map(|result| match result {
                             Ok(dir_entry) => self.create_image(&dir_entry.path()),
@@ -105,7 +100,11 @@ impl Camera {
 
     fn create_image(&self, path: &Path) -> Option<Result<Image>> {
         path.extension().and_then(|extension| if self.is_valid_image_extension(extension) {
-                                      unimplemented!()
+                                      Some(self.image_url(path).and_then(|url|
+                                         parse_image_datetime(&path).map(|datetime| Image {
+                                             url: url,
+                                             datetime: datetime,
+                                       })))
                                   } else {
                                       None
                                   })
@@ -113,5 +112,24 @@ impl Camera {
 
     fn is_valid_image_extension(&self, extension: &OsStr) -> bool {
         self.image_extensions.iter().any(|valid_extension| extension == valid_extension)
+    }
+
+    fn image_url(&self, path: &Path) -> Result<Url> {
+        path.strip_prefix(&self.document_root).map_err(Error::from).and_then(|path| {
+                                                                                 self.image_server
+                                            .join(&path.to_string_lossy()).map_err(Error::from)
+                                                                             })
+    }
+}
+
+fn parse_image_datetime(path: &Path) -> Result<DateTime<Utc>> {
+    if let Some(file_stem) = path.file_stem().and_then(|file_stem| file_stem.to_str()) {
+        if file_stem.len() <= 13 {
+            panic!("Too short!");
+        }
+        let (_, datetime) = file_stem.split_at(file_stem.len() - 13);
+        Utc.datetime_from_str(datetime, "%y%m%d_%H%M%S").map_err(Error::from)
+    } else {
+        unimplemented!()
     }
 }

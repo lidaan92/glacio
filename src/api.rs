@@ -113,6 +113,9 @@ impl Camera {
 
 impl Image {
     fn summary(&self) -> ImageSummary {
-        unimplemented!()
+        ImageSummary {
+            url: self.url.to_string(),
+            datetime: self.datetime.to_rfc3339(),
+        }
     }
 }

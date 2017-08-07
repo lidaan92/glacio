@@ -3,6 +3,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use std::fs::{DirEntry, ReadDir};
 use std::path::{Path, PathBuf};
 
+/// A remote camera, usually used to take pictures of glaciers or other cool stuff.
 #[derive(Debug)]
 pub struct Camera {
     directory: PathBuf,
@@ -13,13 +14,17 @@ pub struct Images {
     read_dir: ReadDir,
 }
 
+/// A remote camera image.
+///
+/// These exist on local filesystems and are served via remote servers (e.g.
+/// http://iridiumcam.lidar.io).
 #[derive(Debug)]
 pub struct Image {
     pub datetime: DateTime<Utc>,
 }
 
 impl Camera {
-    /// Creates a new camera for the provided path.
+    /// Creates a new camera with a local image path.
     ///
     /// # Examples
     ///
@@ -85,7 +90,7 @@ mod tests {
 
     #[test]
     fn new_camera() {
-        let camera = Camera::new("data/ATLAS_CAM");
+        Camera::new("data/ATLAS_CAM");
     }
 
     #[test]

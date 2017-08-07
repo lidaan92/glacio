@@ -1,2 +1,3 @@
 [[cameras]]
 name = "ATLAS_CAM"
+description = "Single netcam, installed in 2015, that watches the ATLAS system from above."

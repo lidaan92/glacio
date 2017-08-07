@@ -1,3 +1,4 @@
+extern crate chrono;
 #[macro_use]
 extern crate iron;
 extern crate persistent;
@@ -12,7 +13,7 @@ extern crate toml;
 pub mod api;
 mod camera;
 
-pub use camera::Camera;
+pub use camera::{Camera, Image};
 
 #[derive(Debug)]
 pub enum Error {
@@ -29,6 +30,24 @@ impl From<std::io::Error> for Error {
 impl From<toml::de::Error> for Error {
     fn from(err: toml::de::Error) -> Error {
         Error::TomlDe(err)
+    }
+}
+
+impl std::error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::Io(ref err) => err.description(),
+            Error::TomlDe(ref err) => err.description(),
+        }
+    }
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            Error::Io(ref err) => err.fmt(f),
+            Error::TomlDe(ref err) => err.fmt(f),
+        }
     }
 }
 

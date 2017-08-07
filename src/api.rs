@@ -1,4 +1,4 @@
-use {Camera, Error, Result};
+use {Camera, Error, Image, Result};
 use iron::{Chain, IronResult, Plugin, Request, Response, status};
 use iron::headers::AccessControlAllowOrigin;
 use iron::mime::Mime;
@@ -33,7 +33,10 @@ pub fn create_handler(config: &Config) -> Chain {
 
 fn handle_cameras(request: &mut Request) -> IronResult<Response> {
     let arc = request.get::<PersistentRead<Cameras>>().unwrap();
-    json_response(arc.as_ref().values().collect::<Vec<_>>())
+    json_response(itry!(arc.as_ref()
+                            .values()
+                            .map(|camera| camera.summary())
+                            .collect::<Result<Vec<_>>>()))
 }
 
 fn handle_camera_detail(request: &mut Request) -> IronResult<Response> {
@@ -56,6 +59,22 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 struct CameraConfig {
     name: String,
+    description: String,
+    directory: String,
+}
+
+/// A summary of this camera's information.
+#[derive(Debug, Serialize)]
+pub struct CameraSummary {
+    name: String,
+    description: String,
+    latest_image: Option<ImageSummary>,
+}
+
+#[derive(Debug, Serialize)]
+struct ImageSummary {
+    url: String,
+    datetime: String,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -73,10 +92,27 @@ impl Config {
 
 impl CameraConfig {
     fn to_camera(&self) -> Camera {
-        Camera::new(&self.name)
+        unimplemented!()
     }
 }
 
 impl Key for Cameras {
     type Value = HashMap<String, Camera>;
+}
+
+impl Camera {
+    fn summary(&self) -> Result<CameraSummary> {
+        let latest_image = self.latest_image()?;
+        Ok(CameraSummary {
+               name: self.name().to_string(),
+               description: self.description().to_string(),
+               latest_image: latest_image.map(|image| image.summary()),
+           })
+    }
+}
+
+impl Image {
+    fn summary(&self) -> ImageSummary {
+        unimplemented!()
+    }
 }

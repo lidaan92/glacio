@@ -1,4 +1,4 @@
-use {Error, Result};
+use {Camera, Error, Result};
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::ContentType;
 use iron::typemap::Key;
@@ -68,6 +68,19 @@ fn camera(request: &mut Request) -> IronResult<Response> {
     json_response(camera.detail(request))
 }
 
+fn camera_images(request: &mut Request) -> IronResult<Response> {
+    let arc = request.get::<Read<Cameras>>().unwrap();
+    let cameras = arc.as_ref();
+    let name = request.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("name")
+        .unwrap();
+    let camera = iexpect!(cameras.get(name));
+    let camera = itry!(Camera::new(&camera.path));
+    unimplemented!()
+}
+
 impl Api {
     /// Creates a new api from the provided path to a toml config file.
     ///
@@ -87,6 +100,7 @@ impl Api {
         let mut router = Router::new();
         router.get("/cameras", cameras, "cameras");
         router.get("/cameras/:name", camera, "camera");
+        router.get("/cameras/:name/images", camera_images, "camera_images");
 
         let mut chain = Chain::new(router);
         let cameras = config.cameras();
@@ -114,6 +128,11 @@ impl Handler for Api {
 impl ToJson for CameraConfig {
     fn summary(&self, request: &Request) -> Value {
         let url = url_for!(request, "camera", "name" => self.name.to_string());
-        json!({ "name": self.name, "url": url.as_ref().as_str(), })
+        let images_url = url_for!(request, "camera_images", "name" => self.name.to_string());
+        json!({
+            "name": self.name,
+            "url": url.as_ref().as_str(),
+            "images_url": images_url.as_ref().as_str(),
+        })
     }
 }

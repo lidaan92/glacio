@@ -25,6 +25,8 @@ pub enum Error {
     InterleavedMessage(String),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
+    /// Wrapper around `std::num::ParseFloatError`.
+    ParseFloat(std::num::ParseFloatError),
     /// Wrapper around `std::num::ParseIntError`.
     ParseInt(std::num::ParseIntError),
     /// Wrapper around `sbd::Error`.
@@ -38,6 +40,12 @@ pub enum Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
         Error::Io(err)
+    }
+}
+
+impl From<std::num::ParseFloatError> for Error {
+    fn from(err: std::num::ParseFloatError) -> Error {
+        Error::ParseFloat(err)
     }
 }
 
@@ -78,6 +86,7 @@ impl std::error::Error for Error {
             Error::ImageFilename(_) => "invalid image filename",
             Error::InterleavedMessage(_) => "problem reconstructing an interleaved message",
             Error::Io(ref err) => err.description(),
+            Error::ParseFloat(ref err) => err.description(),
             Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
@@ -93,6 +102,7 @@ impl std::fmt::Display for Error {
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
             Error::InterleavedMessage(ref msg) => write!(f, "interleaved message error: {}", msg),
             Error::Io(ref err) => err.fmt(f),
+            Error::ParseFloat(ref err) => err.fmt(f),
             Error::ParseInt(ref err) => err.fmt(f),
             Error::Sbd(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),

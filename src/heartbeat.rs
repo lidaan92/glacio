@@ -40,7 +40,12 @@ pub struct ReadSbd {
 /// There are multiple version of the heartbeat messages, since Pete changes the format each time
 /// he visits ATLAS.
 #[derive(Clone, Copy, Debug)]
-pub struct Heartbeat;
+pub struct Heartbeat {
+    /// The state of charge of the first battery.
+    pub soc1: f32,
+    /// The state of charge of the second battery.
+    pub soc2: f32,
+}
 
 /// A Sutron interleaved message.
 ///
@@ -80,7 +85,31 @@ impl FromStr for Heartbeat {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Heartbeat> {
-        Ok(Heartbeat)
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?x)^ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
+                                                .*\r\n # scanner on
+                                                .*\r\n # external temp, pressure, rh
+                                                .*\r\n # scan start
+                                                .*\r\n # scan stop
+                                                .*\r\n # scan skip
+                                                .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
+                                                .*\r\n # efoy1
+                                                .*\r\n # efoy2
+                                                .* # riegl switch
+                                                \z").unwrap();
+        }
+        if let Some(captures) = RE.captures(s) {
+            Ok(Heartbeat {
+                   soc1: captures.name("soc1")
+                       .unwrap()
+                       .parse()?,
+                   soc2: captures.name("soc2")
+                       .unwrap()
+                       .parse()?,
+               })
+        } else {
+            unimplemented!()
+        }
     }
 }
 
@@ -171,5 +200,13 @@ mod tests {
         let heartbeats = read_sbd.collect::<Vec<Result<Heartbeat>>>();
         assert_eq!(2, heartbeats.len());
         assert!(heartbeats.iter().all(|result| result.is_ok()));
+    }
+
+    #[test]
+    fn heartbeat_parsing() {
+        let mut read_sbd = read_sbd("data", "300234063556840").unwrap();
+        let heartbeat = read_sbd.next().unwrap().unwrap();
+        assert_eq!(94.208, heartbeat.soc1);
+        assert_eq!(94.947, heartbeat.soc2);
     }
 }

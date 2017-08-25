@@ -1,4 +1,7 @@
 extern crate chrono;
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
 extern crate sbd;
 extern crate url;
 
@@ -20,6 +23,8 @@ pub enum Error {
     ImageFilename(String),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
+    /// Wrapper around `std::num::ParseIntError`.
+    ParseInt(std::num::ParseIntError),
     /// Wrapper around `sbd::Error`.
     Sbd(sbd::Error),
     /// Wrapper around `std::path::StripPrefixError`.
@@ -31,6 +36,12 @@ pub enum Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
         Error::Io(err)
+    }
+}
+
+impl From<std::num::ParseIntError> for Error {
+    fn from(err: std::num::ParseIntError) -> Error {
+        Error::ParseInt(err)
     }
 }
 
@@ -64,6 +75,7 @@ impl std::error::Error for Error {
             Error::ChronoParse(ref err) => err.description(),
             Error::ImageFilename(_) => "invalid image filename",
             Error::Io(ref err) => err.description(),
+            Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
             Error::UrlParse(ref err) => err.description(),
@@ -77,6 +89,7 @@ impl std::fmt::Display for Error {
             Error::ChronoParse(ref err) => err.fmt(f),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
             Error::Io(ref err) => err.fmt(f),
+            Error::ParseInt(ref err) => err.fmt(f),
             Error::Sbd(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),
             Error::UrlParse(ref err) => err.fmt(f),

@@ -1,11 +1,14 @@
+mod camera;
+
 use {Camera, Error, Result};
+use api::camera::Config as CameraConfig;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::ContentType;
 use iron::typemap::Key;
 use persistent::Read;
 use router::Router;
 use serde::Serialize;
-use serde_json::{self, Value};
+use serde_json;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read as IoRead;
@@ -23,24 +26,10 @@ struct Config {
     cameras: Vec<CameraConfig>,
 }
 
-#[derive(Clone, Deserialize, Debug)]
-struct CameraConfig {
-    name: String,
-    description: String,
-    path: String,
-}
-
 #[derive(Copy, Clone, Debug)]
 struct Cameras;
 impl Key for Cameras {
     type Value = HashMap<String, CameraConfig>;
-}
-
-trait ToJson {
-    fn summary(&self, request: &Request) -> Value;
-    fn detail(&self, request: &Request) -> Value {
-        self.summary(request)
-    }
 }
 
 fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
@@ -77,7 +66,7 @@ fn camera_images(request: &mut Request) -> IronResult<Response> {
         .find("name")
         .unwrap();
     let camera = iexpect!(cameras.get(name));
-    let camera = itry!(Camera::new(&camera.path));
+    let images = camera.images(request);
     unimplemented!()
 }
 
@@ -122,17 +111,5 @@ impl Config {
 impl Handler for Api {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
         self.chain.handle(request)
-    }
-}
-
-impl ToJson for CameraConfig {
-    fn summary(&self, request: &Request) -> Value {
-        let url = url_for!(request, "camera", "name" => self.name.to_string());
-        let images_url = url_for!(request, "camera_images", "name" => self.name.to_string());
-        json!({
-            "name": self.name,
-            "url": url.as_ref().as_str(),
-            "images_url": images_url.as_ref().as_str(),
-        })
     }
 }

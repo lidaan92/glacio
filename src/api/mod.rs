@@ -1,6 +1,9 @@
 mod camera;
+mod pagination;
 
-use {Camera, Error, Result};
+pub use self::pagination::Pagination;
+
+use {Error, Result};
 use api::camera::Config as CameraConfig;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::ContentType;
@@ -64,10 +67,10 @@ fn camera_images(request: &mut Request) -> IronResult<Response> {
         .get::<Router>()
         .unwrap()
         .find("name")
-        .unwrap();
-    let camera = iexpect!(cameras.get(name));
-    let images = camera.images(request);
-    unimplemented!()
+        .unwrap()
+        .to_string();
+    let camera = iexpect!(cameras.get(&name));
+    json_response(itry!(camera.images(request)))
 }
 
 impl Api {

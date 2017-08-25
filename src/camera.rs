@@ -6,6 +6,7 @@
 
 use {Error, Result};
 use chrono::{DateTime, TimeZone, Utc};
+use std::cmp::Ordering;
 use std::ffi::OsString;
 use std::fs::ReadDir;
 use std::path::{Path, PathBuf};
@@ -44,7 +45,7 @@ pub struct Images {
 ///
 /// These exist on local filesystems and are served via remote servers (e.g.
 /// http://iridiumcam.lidar.io).
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd)]
 pub struct Image {
     datetime: DateTime<Utc>,
     path: PathBuf,
@@ -175,6 +176,25 @@ impl Image {
     /// ```
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    /// Returns this image's datetime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::Image;
+    /// let image = Image::new("data/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg").unwrap();
+    /// let datetime = image.datetime();
+    /// ```
+    pub fn datetime(&self) -> DateTime<Utc> {
+        self.datetime
+    }
+}
+
+impl Ord for Image {
+    fn cmp(&self, other: &Image) -> Ordering {
+        self.datetime.cmp(&other.datetime)
     }
 }
 

@@ -1,3 +1,5 @@
+use {Camera, Image, Result};
+use api::Pagination;
 use iron::Request;
 
 #[derive(Clone, Deserialize, Debug)]
@@ -19,7 +21,9 @@ pub struct Summary {
 pub struct Detail;
 
 #[derive(Serialize, Debug)]
-pub struct ImageSummary;
+pub struct ImageSummary {
+    datetime: String,
+}
 
 impl Config {
     pub fn summary(&self, request: &Request) -> Summary {
@@ -37,7 +41,24 @@ impl Config {
         unimplemented!()
     }
 
-    pub fn images(&self, request: &Request) -> Vec<ImageSummary> {
-        unimplemented!()
+    pub fn images(&self, request: &mut Request) -> Result<Vec<ImageSummary>> {
+        let pagination = Pagination::new(request)?;
+        let mut images = self.camera()
+            .and_then(|camera| camera.images())
+            .and_then(|images| images.collect::<Result<Vec<_>>>())?;
+        images.sort_by(|a, b| b.cmp(a));
+        Ok(images.into_iter()
+               .skip(pagination.skip())
+               .take(pagination.take())
+               .map(|image| self.image_summary(request, &image))
+               .collect())
+    }
+
+    fn camera(&self) -> Result<Camera> {
+        Camera::new(&self.path)
+    }
+
+    fn image_summary(&self, request: &Request, image: &Image) -> ImageSummary {
+        ImageSummary { datetime: image.datetime().to_rfc3339() }
     }
 }

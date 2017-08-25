@@ -1,4 +1,4 @@
-use {Camera, Error, Result};
+use {Error, Result};
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::ContentType;
 use iron::typemap::Key;
@@ -23,7 +23,7 @@ struct Config {
     cameras: Vec<CameraConfig>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 struct CameraConfig {
     name: String,
     description: String,
@@ -33,11 +33,11 @@ struct CameraConfig {
 #[derive(Copy, Clone, Debug)]
 struct Cameras;
 impl Key for Cameras {
-    type Value = HashMap<String, Camera>;
+    type Value = HashMap<String, CameraConfig>;
 }
 
 trait Summary {
-    fn summary(&self) -> Value;
+    fn summary(&self, request: &Request) -> Value;
 }
 
 fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
@@ -49,8 +49,12 @@ fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
 fn cameras(request: &mut Request) -> IronResult<Response> {
     let arc = request.get::<Read<Cameras>>().unwrap();
     let cameras = arc.as_ref();
-    let cameras = cameras.values().map(|camera| camera.summary()).collect::<Vec<_>>();
+    let cameras = cameras.values().map(|camera| camera.summary(request)).collect::<Vec<_>>();
     json_response(cameras)
+}
+
+fn camera(request: &mut Request) -> IronResult<Response> {
+    unimplemented!()
 }
 
 impl Api {
@@ -71,9 +75,10 @@ impl Api {
     fn new(config: &Config) -> Result<Api> {
         let mut router = Router::new();
         router.get("/cameras", cameras, "cameras");
+        router.get("/cameras/:name", camera, "camera");
 
         let mut chain = Chain::new(router);
-        let cameras = config.cameras()?;
+        let cameras = config.cameras();
         chain.link(Read::<Cameras>::both(cameras));
 
         Ok(Api { chain: chain })
@@ -81,8 +86,11 @@ impl Api {
 }
 
 impl Config {
-    fn cameras(&self) -> Result<HashMap<String, Camera>> {
-        unimplemented!()
+    fn cameras(&self) -> HashMap<String, CameraConfig> {
+        self.cameras
+            .iter()
+            .map(|&ref config| (config.name.clone(), config.clone()))
+            .collect()
     }
 }
 
@@ -92,8 +100,9 @@ impl Handler for Api {
     }
 }
 
-impl Summary for Camera {
-    fn summary(&self) -> Value {
-        unimplemented!()
+impl Summary for CameraConfig {
+    fn summary(&self, request: &Request) -> Value {
+        let url = url_for!(request, "camera", "name" => self.name.to_string());
+        json!({ "name": self.name, "url": url.as_ref().as_str(), })
     }
 }

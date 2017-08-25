@@ -5,11 +5,13 @@ extern crate lazy_static;
 extern crate iron;
 extern crate persistent;
 extern crate regex;
+#[macro_use]
 extern crate router;
 extern crate sbd;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 extern crate toml;
 extern crate url;

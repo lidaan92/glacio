@@ -6,8 +6,11 @@ authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
 [dependencies]
 chrono = "0.4"
 docopt = "0.8"
+iron = "0.5"
 lazy_static = "0.2"
+persistent = "0.3"
 regex = "0.1"
+router = "0.5"
 sbd = "0.1"
 serde = "1.0"
 serde_derive = "1.0"

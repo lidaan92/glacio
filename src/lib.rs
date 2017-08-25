@@ -1,17 +1,25 @@
 extern crate chrono;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate iron;
+extern crate persistent;
 extern crate regex;
+extern crate router;
 extern crate sbd;
+extern crate serde;
+extern crate serde_json;
 extern crate url;
 
 #[deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
        trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
        unused_qualifications)]
 
+mod api;
 pub mod camera;
 pub mod heartbeat;
 
+pub use api::Api;
 pub use camera::{Camera, Image};
 pub use heartbeat::Heartbeat;
 

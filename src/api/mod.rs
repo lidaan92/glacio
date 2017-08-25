@@ -8,7 +8,7 @@ use {Error, Result};
 use api::camera::Config as CameraConfig;
 use api::heartbeat::Config as HeartbeatConfig;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
-use iron::headers::ContentType;
+use iron::headers::{AccessControlAllowOrigin, ContentType};
 use iron::typemap::Key;
 use persistent::Read;
 use router::Router;
@@ -54,6 +54,7 @@ impl Key for Heartbeats {
 fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
     let mut response = Response::with((status::Ok, itry!(serde_json::to_string(&data))));
     response.headers.set(ContentType::json());
+    response.headers.set(AccessControlAllowOrigin::Any);
     Ok(response)
 }
 

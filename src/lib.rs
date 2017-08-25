@@ -21,6 +21,8 @@ pub enum Error {
     ChronoParse(chrono::ParseError),
     /// Invalid image filename.
     ImageFilename(String),
+    /// Problem reconstructing an interleaved message.
+    InterleavedMessage(String),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
     /// Wrapper around `std::num::ParseIntError`.
@@ -74,6 +76,7 @@ impl std::error::Error for Error {
         match *self {
             Error::ChronoParse(ref err) => err.description(),
             Error::ImageFilename(_) => "invalid image filename",
+            Error::InterleavedMessage(_) => "problem reconstructing an interleaved message",
             Error::Io(ref err) => err.description(),
             Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
@@ -88,6 +91,7 @@ impl std::fmt::Display for Error {
         match *self {
             Error::ChronoParse(ref err) => err.fmt(f),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
+            Error::InterleavedMessage(ref msg) => write!(f, "interleaved message error: {}", msg),
             Error::Io(ref err) => err.fmt(f),
             Error::ParseInt(ref err) => err.fmt(f),
             Error::Sbd(ref err) => err.fmt(f),

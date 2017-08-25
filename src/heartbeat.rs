@@ -50,7 +50,7 @@ pub struct Heartbeat;
 struct InterleavedMessage {
     complete: bool,
     id: Option<String>,
-    total_bytes: Option<usize>,
+    total_bytes: usize,
     data: String,
 }
 
@@ -88,7 +88,7 @@ impl InterleavedMessage {
     fn new() -> InterleavedMessage {
         InterleavedMessage {
             id: None,
-            total_bytes: None,
+            total_bytes: 0,
             complete: false,
             data: String::new(),
         }
@@ -99,7 +99,10 @@ impl InterleavedMessage {
     }
 
     fn add(&mut self, data: &str) -> Result<()> {
-        assert!(!self.complete); // FIXME this should be an error, not a panic
+        if self.complete {
+            return Err(Error::InterleavedMessage(format!("Trying to add data to an already-complete message: {}",
+                                                         data)));
+        }
         match &data[0..1] {
             "0" => {
                 self.data.push_str(&data[1..]);
@@ -118,29 +121,38 @@ impl InterleavedMessage {
                     let start_byte = captures.name("start_byte").unwrap();
                     if start_byte == "0" {
                         self.id = Some(id.to_string());
-                        self.total_bytes = Some(captures.name("total_bytes")
-                                                    .unwrap()
-                                                    .parse()?); // FIXME should be an error, we unwrap then put back in an option b/c the total bytes *must* be available when the id is being set.
-                    } else {
-                        if let Some(ref previous_id) = self.id {
-                            if id != previous_id {
-                                panic!("ids don't match: {}, {}", id, previous_id); // FIXME
-                            }
+                        if let Some(total_bytes) = captures.name("total_bytes") {
+                            self.total_bytes = total_bytes.parse()?;
                         } else {
-                            panic!("Message was not started"); // FIXME
+                            return Err(Error::InterleavedMessage("No total_bytes field for the first part of message".to_string()));
                         }
+                    } else if let Some(ref previous_id) = self.id {
+                        if id != previous_id {
+                            return Err(Error::InterleavedMessage(format!("Ids don't match: {} <> {}",
+                                                                         id,
+                                                                         previous_id)));
+                        }
+                    } else {
+                        return Err(Error::InterleavedMessage("Picking up message in the middle"
+                                                                 .to_string()));
                     }
                     self.data.push_str(captures.name("data").unwrap());
-                    // FIXME handle data going over total bytes
-                    if self.data.len() == self.total_bytes.unwrap() {
+                    if self.data.len() == self.total_bytes {
                         self.complete = true;
+                    } else if self.data.len() > self.total_bytes {
+                        return Err(Error::InterleavedMessage(format!("Too many bytes in data: {} (expected {})",
+                                                                     self.data.len(),
+                                                                     self.total_bytes)));
                     }
                     Ok(())
                 } else {
-                    unimplemented!()
+                    return Err(Error::InterleavedMessage(format!("Message does not match regex: {}",
+                                                                 data)));
                 }
             }
-            _ => unimplemented!(),
+            c @ _ => {
+                return Err(Error::InterleavedMessage(format!("Unrecognized packet type: {}", c)))
+            }
         }
     }
 

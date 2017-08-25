@@ -8,7 +8,10 @@ extern crate regex;
 extern crate router;
 extern crate sbd;
 extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
+extern crate toml;
 extern crate url;
 
 #[deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
@@ -41,6 +44,8 @@ pub enum Error {
     Sbd(sbd::Error),
     /// Wrapper around `std::path::StripPrefixError`.
     StripPrefix(std::path::StripPrefixError),
+    /// Wrapper around `toml::de::Error`.
+    TomlDe(toml::de::Error),
     /// Wrapper around `url::ParseError`.
     UrlParse(url::ParseError),
 }
@@ -81,6 +86,12 @@ impl From<sbd::Error> for Error {
     }
 }
 
+impl From<toml::de::Error> for Error {
+    fn from(err: toml::de::Error) -> Error {
+        Error::TomlDe(err)
+    }
+}
+
 impl From<url::ParseError> for Error {
     fn from(err: url::ParseError) -> Error {
         Error::UrlParse(err)
@@ -98,6 +109,7 @@ impl std::error::Error for Error {
             Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
+            Error::TomlDe(ref err) => err.description(),
             Error::UrlParse(ref err) => err.description(),
         }
     }
@@ -114,6 +126,7 @@ impl std::fmt::Display for Error {
             Error::ParseInt(ref err) => err.fmt(f),
             Error::Sbd(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),
+            Error::TomlDe(ref err) => err.fmt(f),
             Error::UrlParse(ref err) => err.fmt(f),
         }
     }

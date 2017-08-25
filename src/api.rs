@@ -1,4 +1,4 @@
-use Camera;
+use {Camera, Error, Result};
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::ContentType;
 use iron::typemap::Key;
@@ -7,11 +7,27 @@ use router::Router;
 use serde::Serialize;
 use serde_json::{self, Value};
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::Read as IoRead;
+use std::path::Path;
+use toml;
 
 /// Iron JSON api for glacio.
 #[allow(missing_debug_implementations)]
 pub struct Api {
     chain: Chain,
+}
+
+#[derive(Deserialize, Debug)]
+struct Config {
+    cameras: Vec<CameraConfig>,
+}
+
+#[derive(Deserialize, Debug)]
+struct CameraConfig {
+    name: String,
+    description: String,
+    path: String,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -38,21 +54,35 @@ fn cameras(request: &mut Request) -> IronResult<Response> {
 }
 
 impl Api {
-    /// Creates a new api.
+    /// Creates a new api from the provided path to a toml config file.
     ///
     /// # Examples
     ///
     /// ```
     /// # use glacio::Api;
-    /// let api = Api::new();
+    /// let api = Api::from_path("data/rdcrlpjg.toml").unwrap();
     /// ```
-    pub fn new() -> Api {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Api> {
+        let mut s = String::new();
+        File::open(path).and_then(|mut read| read.read_to_string(&mut s))?;
+        toml::from_str(&s).map_err(Error::from).and_then(|config| Api::new(&config))
+    }
+
+    fn new(config: &Config) -> Result<Api> {
         let mut router = Router::new();
         router.get("/cameras", cameras, "cameras");
+
         let mut chain = Chain::new(router);
-        let cameras = HashMap::new();
+        let cameras = config.cameras()?;
         chain.link(Read::<Cameras>::both(cameras));
-        Api { chain: chain }
+
+        Ok(Api { chain: chain })
+    }
+}
+
+impl Config {
+    fn cameras(&self) -> Result<HashMap<String, Camera>> {
+        unimplemented!()
     }
 }
 

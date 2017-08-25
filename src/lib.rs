@@ -6,8 +6,10 @@ extern crate url;
        unused_qualifications)]
 
 pub mod camera;
+mod heartbeat;
 
 pub use camera::{Camera, Image};
+pub use heartbeat::Heartbeat;
 
 #[derive(Debug)]
 pub enum Error {

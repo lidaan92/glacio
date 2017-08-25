@@ -1,5 +1,6 @@
 use {Camera, Image, Result};
 use api::Pagination;
+use camera::Server;
 use iron::Request;
 
 #[derive(Clone, Deserialize, Debug)]
@@ -22,7 +23,9 @@ pub struct Detail;
 
 #[derive(Serialize, Debug)]
 pub struct ImageSummary {
+    camera_name: String,
     datetime: String,
+    url: String,
 }
 
 impl Config {
@@ -41,24 +44,32 @@ impl Config {
         unimplemented!()
     }
 
-    pub fn images(&self, request: &mut Request) -> Result<Vec<ImageSummary>> {
+    pub fn images(&self, request: &mut Request, server: &Server) -> Result<Vec<ImageSummary>> {
         let pagination = Pagination::new(request)?;
         let mut images = self.camera()
             .and_then(|camera| camera.images())
             .and_then(|images| images.collect::<Result<Vec<_>>>())?;
         images.sort_by(|a, b| b.cmp(a));
-        Ok(images.into_iter()
-               .skip(pagination.skip())
-               .take(pagination.take())
-               .map(|image| self.image_summary(request, &image))
-               .collect())
+        images.into_iter()
+            .skip(pagination.skip())
+            .take(pagination.take())
+            .map(|image| self.image_summary(request, &server, &image))
+            .collect()
     }
 
     fn camera(&self) -> Result<Camera> {
         Camera::new(&self.path)
     }
 
-    fn image_summary(&self, request: &Request, image: &Image) -> ImageSummary {
-        ImageSummary { datetime: image.datetime().to_rfc3339() }
+    fn image_summary(&self,
+                     request: &Request,
+                     server: &Server,
+                     image: &Image)
+                     -> Result<ImageSummary> {
+        Ok(ImageSummary {
+               camera_name: self.name.to_string(),
+               datetime: image.datetime().to_rfc3339(),
+               url: server.url_for(image)?.to_string(),
+           })
     }
 }

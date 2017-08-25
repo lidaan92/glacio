@@ -26,6 +26,7 @@ pub struct Api {
 
 #[derive(Deserialize, Debug)]
 struct Config {
+    image_document_root: String,
     cameras: Vec<CameraConfig>,
 }
 
@@ -34,6 +35,13 @@ struct Cameras;
 impl Key for Cameras {
     type Value = HashMap<String, CameraConfig>;
 }
+
+#[derive(Copy, Clone, Debug)]
+struct ImageServer;
+impl Key for ImageServer {
+    type Value = super::camera::Server;
+}
+
 
 fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
     let mut response = Response::with((status::Ok, itry!(serde_json::to_string(&data))));
@@ -61,8 +69,10 @@ fn camera(request: &mut Request) -> IronResult<Response> {
 }
 
 fn camera_images(request: &mut Request) -> IronResult<Response> {
-    let arc = request.get::<Read<Cameras>>().unwrap();
-    let cameras = arc.as_ref();
+    let cameras_arc = request.get::<Read<Cameras>>().unwrap();
+    let cameras = cameras_arc.as_ref();
+    let image_server_arc = request.get::<Read<ImageServer>>().unwrap();
+    let image_server = image_server_arc.as_ref();
     let name = request.extensions
         .get::<Router>()
         .unwrap()
@@ -70,7 +80,7 @@ fn camera_images(request: &mut Request) -> IronResult<Response> {
         .unwrap()
         .to_string();
     let camera = iexpect!(cameras.get(&name));
-    json_response(itry!(camera.images(request)))
+    json_response(itry!(camera.images(request, image_server)))
 }
 
 impl Api {
@@ -96,7 +106,9 @@ impl Api {
 
         let mut chain = Chain::new(router);
         let cameras = config.cameras();
+        let image_server = config.image_server()?;
         chain.link(Read::<Cameras>::both(cameras));
+        chain.link(Read::<ImageServer>::both(image_server));
 
         Ok(Api { chain: chain })
     }
@@ -108,6 +120,10 @@ impl Config {
             .iter()
             .map(|&ref config| (config.name.clone(), config.clone()))
             .collect()
+    }
+
+    fn image_server(&self) -> Result<super::camera::Server> {
+        super::camera::Server::new(&self.image_document_root)
     }
 }
 

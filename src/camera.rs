@@ -1,17 +1,22 @@
 use {Error, Result};
 use chrono::{DateTime, TimeZone, Utc};
+use std::ffi::OsString;
 use std::fs::{DirEntry, ReadDir};
 use std::path::{Path, PathBuf};
+
+const DEFAULT_EXTENSIONS: &'static [&'static str] = &["jpg"];
 
 /// A remote camera, usually used to take pictures of glaciers or other cool stuff.
 #[derive(Debug)]
 pub struct Camera {
     directory: PathBuf,
+    extensions: Vec<OsString>,
 }
 
 /// An iterator over a camera's images.
 pub struct Images {
     read_dir: ReadDir,
+    extensions: Vec<OsString>,
 }
 
 /// A remote camera image.
@@ -33,7 +38,10 @@ impl Camera {
     /// let camera = Camera::new("data/ATLAS_CAM");
     /// ```
     pub fn new<P: AsRef<Path>>(path: P) -> Camera {
-        Camera { directory: path.as_ref().to_path_buf() }
+        Camera {
+            directory: path.as_ref().to_path_buf(),
+            extensions: DEFAULT_EXTENSIONS.iter().map(|&s| s.into()).collect(),
+        }
     }
 
     /// Returns an iterator over this camera's images.
@@ -48,7 +56,12 @@ impl Camera {
     pub fn images(&self) -> Result<Images> {
         self.directory
             .read_dir()
-            .map(|read_dir| Images { read_dir: read_dir })
+            .map(|read_dir| {
+                     Images {
+                         read_dir: read_dir,
+                         extensions: self.extensions.clone(),
+                     }
+                 })
             .map_err(Error::from)
     }
 }
@@ -57,11 +70,19 @@ impl Iterator for Images {
     type Item = Result<Image>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.read_dir.next().map(|result| {
-                                     result.map_err(Error::from).and_then(|dir_entry| {
-                                                                              Image::new(dir_entry)
-                                                                          })
-                                 })
+        while let Some(result) = self.read_dir.next() {
+            match result {
+                Ok(dir_entry) => {
+                    if let Some(extension) = dir_entry.path().extension() {
+                        if self.extensions.iter().any(|lhs| lhs == extension) {
+                            return Some(Image::new(dir_entry));
+                        }
+                    }
+                }
+                Err(err) => return Some(Err(err.into())),
+            }
+        }
+        None
     }
 }
 

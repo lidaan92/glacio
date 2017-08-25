@@ -21,7 +21,19 @@ pub struct Camera {
     extensions: Vec<OsString>,
 }
 
-/// An iterator over a camera's images.
+/// An iterator over a camera's images, wrapped in a `Result` in case something goes wrong parsing
+/// the image path.
+///
+/// # Examples
+///
+/// ```
+/// # use glacio::Camera;
+/// let camera = Camera::new("data/ATLAS_CAM").unwrap();
+/// for result in camera.images().unwrap() {
+///     let image = result.unwrap();
+///     println!("{:?}", image.path());
+/// }
+/// ```
 #[derive(Debug)]
 pub struct Images {
     read_dir: ReadDir,
@@ -167,7 +179,7 @@ impl Image {
 }
 
 impl Server {
-    /// Creates a new server.
+    /// Creates a new server, defaulting to our lidar.io url as the remote base url.
     ///
     /// The server document root is canonicalized.
     ///
@@ -195,6 +207,8 @@ impl Server {
     /// let image = Image::new("data/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg").unwrap();
     /// let server = Server::new("data").unwrap();
     /// let url = server.url_for(&image).unwrap();
+    /// assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
+    ///            url.as_str());
     /// ```
     pub fn url_for(&self, image: &Image) -> Result<Url> {
         let input = image.path().strip_prefix(&self.document_root)?;

@@ -36,8 +36,11 @@ impl Key for Cameras {
     type Value = HashMap<String, CameraConfig>;
 }
 
-trait Summary {
+trait ToJson {
     fn summary(&self, request: &Request) -> Value;
+    fn detail(&self, request: &Request) -> Value {
+        self.summary(request)
+    }
 }
 
 fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
@@ -54,7 +57,15 @@ fn cameras(request: &mut Request) -> IronResult<Response> {
 }
 
 fn camera(request: &mut Request) -> IronResult<Response> {
-    unimplemented!()
+    let arc = request.get::<Read<Cameras>>().unwrap();
+    let cameras = arc.as_ref();
+    let name = request.extensions
+        .get::<Router>()
+        .unwrap()
+        .find("name")
+        .unwrap();
+    let camera = iexpect!(cameras.get(name));
+    json_response(camera.detail(request))
 }
 
 impl Api {
@@ -100,7 +111,7 @@ impl Handler for Api {
     }
 }
 
-impl Summary for CameraConfig {
+impl ToJson for CameraConfig {
     fn summary(&self, request: &Request) -> Value {
         let url = url_for!(request, "camera", "name" => self.name.to_string());
         json!({ "name": self.name, "url": url.as_ref().as_str(), })

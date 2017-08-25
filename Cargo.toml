@@ -6,13 +6,8 @@ authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
 [dependencies]
 chrono = "*"
 docopt = "*"
-env_logger = "*"
-iron = "*"
 lazy_static = "*"
-log = "*"
-persistent = "*"
 regex = "*"
-router = "*"
 sbd = "*"
 serde = "*"
 serde_derive = "*"

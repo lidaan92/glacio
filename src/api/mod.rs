@@ -1,10 +1,12 @@
 mod camera;
+mod heartbeat;
 mod pagination;
 
 pub use self::pagination::Pagination;
 
 use {Error, Result};
 use api::camera::Config as CameraConfig;
+use api::heartbeat::Config as HeartbeatConfig;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::ContentType;
 use iron::typemap::Key;
@@ -26,6 +28,7 @@ pub struct Api {
 
 #[derive(Deserialize, Debug)]
 struct Config {
+    heartbeats: HeartbeatConfig,
     image_document_root: String,
     cameras: Vec<CameraConfig>,
 }
@@ -42,6 +45,11 @@ impl Key for ImageServer {
     type Value = super::camera::Server;
 }
 
+#[derive(Copy, Clone, Debug)]
+struct Heartbeats;
+impl Key for Heartbeats {
+    type Value = HeartbeatConfig;
+}
 
 fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
     let mut response = Response::with((status::Ok, itry!(serde_json::to_string(&data))));
@@ -83,6 +91,12 @@ fn camera_images(request: &mut Request) -> IronResult<Response> {
     json_response(itry!(camera.images(request, image_server)))
 }
 
+fn atlas_status(request: &mut Request) -> IronResult<Response> {
+    let heartbeats_arc = request.get::<Read<Heartbeats>>().unwrap();
+    let heartbeats = heartbeats_arc.as_ref();
+    json_response(itry!(heartbeats.status(request)))
+}
+
 impl Api {
     /// Creates a new api from the provided path to a toml config file.
     ///
@@ -103,12 +117,14 @@ impl Api {
         router.get("/cameras", cameras, "cameras");
         router.get("/cameras/:name", camera, "camera");
         router.get("/cameras/:name/images", camera_images, "camera_images");
+        router.get("/atlas/status", atlas_status, "atlas_status");
 
         let mut chain = Chain::new(router);
         let cameras = config.cameras();
         let image_server = config.image_server()?;
         chain.link(Read::<Cameras>::both(cameras));
         chain.link(Read::<ImageServer>::both(image_server));
+        chain.link(Read::<Heartbeats>::both(config.heartbeats.clone()));
 
         Ok(Api { chain: chain })
     }

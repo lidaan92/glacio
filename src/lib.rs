@@ -32,6 +32,8 @@ pub use heartbeat::Heartbeat;
 pub enum Error {
     /// Wrapper around `chrono::ParseError`.
     ChronoParse(chrono::ParseError),
+    /// The ATLAS heartbeat was invalid.
+    Heartbeat(String),
     /// Invalid image filename.
     ImageFilename(String),
     /// Problem reconstructing an interleaved message.
@@ -104,6 +106,7 @@ impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::ChronoParse(ref err) => err.description(),
+            Error::Heartbeat(_) => "error parsing heartbeat",
             Error::ImageFilename(_) => "invalid image filename",
             Error::InterleavedMessage(_) => "problem reconstructing an interleaved message",
             Error::Io(ref err) => err.description(),
@@ -121,6 +124,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Error::ChronoParse(ref err) => err.fmt(f),
+            Error::Heartbeat(ref msg) => write!(f, "error parsing heartbeat: {}", msg),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
             Error::InterleavedMessage(ref msg) => write!(f, "interleaved message error: {}", msg),
             Error::Io(ref err) => err.fmt(f),

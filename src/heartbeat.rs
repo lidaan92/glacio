@@ -1,9 +1,10 @@
 use {Error, Result};
+use chrono::{DateTime, Utc};
 use regex::Regex;
 use sbd::mo::Message;
 use sbd::storage::{FilesystemStorage, Storage};
+use std::cmp::Ordering;
 use std::path::Path;
-use std::str::FromStr;
 use std::vec::IntoIter;
 
 /// Returns a `ReadSbd`, which can iterate over the heartbeats in an sbd storage.
@@ -39,8 +40,10 @@ pub struct ReadSbd {
 /// restriction, heartbeats may come in one or more messages, and might have to be pieced together.
 /// There are multiple version of the heartbeat messages, since Pete changes the format each time
 /// he visits ATLAS.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialOrd)]
 pub struct Heartbeat {
+    /// The date and time of the *first* heartbeat sbd message.
+    pub datetime: DateTime<Utc>,
     /// The state of charge of the first battery.
     pub soc1: f32,
     /// The state of charge of the second battery.
@@ -57,6 +60,7 @@ struct InterleavedMessage {
     id: Option<String>,
     total_bytes: usize,
     data: String,
+    datetime: Option<DateTime<Utc>>,
 }
 
 impl Iterator for ReadSbd {
@@ -65,51 +69,28 @@ impl Iterator for ReadSbd {
     fn next(&mut self) -> Option<Self::Item> {
         let mut message = InterleavedMessage::new();
         while let Some(sbd_message) = self.iter.next() {
-            match sbd_message.payload_str() {
-                Ok(payload) => {
-                    match message.add(payload) {
-                        Ok(()) => if message.is_complete() {
-                            return Some(message.data().parse());
-                        },
-                        Err(err) => return Some(Err(err)),
-                    }
-                }
-                Err(err) => return Some(Err(err.into())),
+            match message.add(&sbd_message) {
+                Ok(()) => if message.is_complete() {
+                    return Some(message.to_heartbeat());
+                },
+                Err(err) => return Some(Err(err)),
             }
         }
         None
     }
 }
 
-impl FromStr for Heartbeat {
-    type Err = Error;
+impl PartialEq for Heartbeat {
+    fn eq(&self, other: &Heartbeat) -> bool {
+        self.datetime == other.datetime
+    }
+}
 
-    fn from_str(s: &str) -> Result<Heartbeat> {
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?x)^ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
-                                                .*\r\n # scanner on
-                                                .*\r\n # external temp, pressure, rh
-                                                .*\r\n # scan start
-                                                .*\r\n # scan stop
-                                                .*\r\n # scan skip
-                                                .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
-                                                .*\r\n # efoy1
-                                                .*\r\n # efoy2
-                                                .* # riegl switch
-                                                \z").unwrap();
-        }
-        if let Some(captures) = RE.captures(s) {
-            Ok(Heartbeat {
-                   soc1: captures.name("soc1")
-                       .unwrap()
-                       .parse()?,
-                   soc2: captures.name("soc2")
-                       .unwrap()
-                       .parse()?,
-               })
-        } else {
-            unimplemented!()
-        }
+impl Eq for Heartbeat {}
+
+impl Ord for Heartbeat {
+    fn cmp(&self, other: &Heartbeat) -> Ordering {
+        self.datetime.cmp(&other.datetime)
     }
 }
 
@@ -120,14 +101,12 @@ impl InterleavedMessage {
             total_bytes: 0,
             complete: false,
             data: String::new(),
+            datetime: None,
         }
     }
 
-    fn data(&self) -> &str {
-        &self.data
-    }
-
-    fn add(&mut self, data: &str) -> Result<()> {
+    fn add(&mut self, message: &Message) -> Result<()> {
+        let data = message.payload_str()?;
         if self.complete {
             return Err(Error::InterleavedMessage(format!("Trying to add data to an already-complete message: {}",
                                                          data)));
@@ -135,6 +114,7 @@ impl InterleavedMessage {
         match &data[0..1] {
             "0" => {
                 self.data.push_str(&data[1..]);
+                self.datetime = Some(message.time_of_session());
                 self.complete = true;
                 Ok(())
             }
@@ -150,6 +130,7 @@ impl InterleavedMessage {
                     let start_byte = captures.name("start_byte").unwrap();
                     if start_byte == "0" {
                         self.id = Some(id.to_string());
+                        self.datetime = Some(message.time_of_session());
                         if let Some(total_bytes) = captures.name("total_bytes") {
                             self.total_bytes = total_bytes.parse()?;
                         } else {
@@ -187,6 +168,35 @@ impl InterleavedMessage {
 
     fn is_complete(&self) -> bool {
         self.complete
+    }
+
+    fn to_heartbeat(&self) -> Result<Heartbeat> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?x)^ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
+                                                .*\r\n # scanner on
+                                                .*\r\n # external temp, pressure, rh
+                                                .*\r\n # scan start
+                                                .*\r\n # scan stop
+                                                .*\r\n # scan skip
+                                                .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
+                                                .*\r\n # efoy1
+                                                .*\r\n # efoy2
+                                                .* # riegl switch
+                                                \z").unwrap();
+        }
+        if let Some(captures) = RE.captures(&self.data) {
+            Ok(Heartbeat {
+                   datetime: self.datetime.unwrap(),
+                   soc1: captures.name("soc1")
+                       .unwrap()
+                       .parse()?,
+                   soc2: captures.name("soc2")
+                       .unwrap()
+                       .parse()?,
+               })
+        } else {
+            Err(Error::Heartbeat("Unable to parse heartbeat".to_string()))
+        }
     }
 }
 

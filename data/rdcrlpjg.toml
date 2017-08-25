@@ -1,5 +1,9 @@
 image_document_root = "/Users/rdcrlpjg/iridiumcam/StarDot"
 
+[heartbeats]
+path = "/Users/rdcrlpjg/iridium"
+imei = "300234063556840"
+
 [[cameras]]
 name = "ATLAS_CAM"
 description = "Single netcam, installed in 2015, that watches the ATLAS system from above."

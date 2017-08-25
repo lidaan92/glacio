@@ -1,4 +1,5 @@
 extern crate chrono;
+extern crate sbd;
 extern crate url;
 
 #[deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
@@ -6,7 +7,7 @@ extern crate url;
        unused_qualifications)]
 
 pub mod camera;
-mod heartbeat;
+pub mod heartbeat;
 
 pub use camera::{Camera, Image};
 pub use heartbeat::Heartbeat;
@@ -19,6 +20,8 @@ pub enum Error {
     ImageFilename(String),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
+    /// Wrapper around `sbd::Error`.
+    Sbd(sbd::Error),
     /// Wrapper around `std::path::StripPrefixError`.
     StripPrefix(std::path::StripPrefixError),
     /// Wrapper around `url::ParseError`.
@@ -43,6 +46,12 @@ impl From<chrono::ParseError> for Error {
     }
 }
 
+impl From<sbd::Error> for Error {
+    fn from(err: sbd::Error) -> Error {
+        Error::Sbd(err)
+    }
+}
+
 impl From<url::ParseError> for Error {
     fn from(err: url::ParseError) -> Error {
         Error::UrlParse(err)
@@ -55,6 +64,7 @@ impl std::error::Error for Error {
             Error::ChronoParse(ref err) => err.description(),
             Error::ImageFilename(_) => "invalid image filename",
             Error::Io(ref err) => err.description(),
+            Error::Sbd(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
             Error::UrlParse(ref err) => err.description(),
         }
@@ -67,6 +77,7 @@ impl std::fmt::Display for Error {
             Error::ChronoParse(ref err) => err.fmt(f),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
             Error::Io(ref err) => err.fmt(f),
+            Error::Sbd(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),
             Error::UrlParse(ref err) => err.fmt(f),
         }

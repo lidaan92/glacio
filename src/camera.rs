@@ -14,6 +14,7 @@ pub struct Camera {
 }
 
 /// An iterator over a camera's images.
+#[derive(Debug)]
 pub struct Images {
     read_dir: ReadDir,
     extensions: Vec<OsString>,
@@ -23,8 +24,9 @@ pub struct Images {
 ///
 /// These exist on local filesystems and are served via remote servers (e.g.
 /// http://iridiumcam.lidar.io).
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Image {
+    /// The date and time that the image was taken, as derived from the image filename.
     pub datetime: DateTime<Utc>,
 }
 

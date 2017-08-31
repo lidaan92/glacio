@@ -1,0 +1,93 @@
+use {Error, Result};
+use chrono::{DateTime, Utc};
+use regex::Regex;
+use sbd::mo::Message;
+
+/// A Sutron interleaved message.
+///
+/// Sutron will break up large messages into parts, using a header to define the number of bytes in
+/// the complete message.
+#[derive(Debug)]
+pub struct InterleavedMessage {
+    complete: bool,
+    id: Option<String>,
+    total_bytes: usize,
+    /// FIXME
+    pub data: String,
+    pub datetime: Option<DateTime<Utc>>,
+}
+
+impl InterleavedMessage {
+    pub fn new() -> InterleavedMessage {
+        InterleavedMessage {
+            id: None,
+            total_bytes: 0,
+            complete: false,
+            data: String::new(),
+            datetime: None,
+        }
+    }
+
+    pub fn add(&mut self, message: &Message) -> Result<()> {
+        let data = message.payload_str()?;
+        if self.complete {
+            return Err(Error::InterleavedMessage(format!("Trying to add data to an already-complete message: {}",
+                                                         data)));
+        }
+        match &data[0..1] {
+            "0" => {
+                self.data.push_str(&data[1..]);
+                self.datetime = Some(message.time_of_session());
+                self.complete = true;
+                Ok(())
+            }
+            "1" => {
+                lazy_static! {
+                    static ref RE: Regex = Regex::new(r"(?sx)^1,
+                                                        (?P<id>\d+),
+                                                        (?P<start_byte>\d+)
+                                                        (,(?P<total_bytes>\d+))?:(?P<data>.*)$").unwrap();
+                }
+                if let Some(captures) = RE.captures(data) {
+                    let id = captures.name("id").unwrap();
+                    let start_byte = captures.name("start_byte").unwrap();
+                    if start_byte == "0" {
+                        self.id = Some(id.to_string());
+                        self.datetime = Some(message.time_of_session());
+                        if let Some(total_bytes) = captures.name("total_bytes") {
+                            self.total_bytes = total_bytes.parse()?;
+                        } else {
+                            return Err(Error::InterleavedMessage("No total_bytes field for the first part of message".to_string()));
+                        }
+                    } else if let Some(ref previous_id) = self.id {
+                        if id != previous_id {
+                            return Err(Error::InterleavedMessage(format!("Ids don't match: {} <> {}",
+                                                                         id,
+                                                                         previous_id)));
+                        }
+                    } else {
+                        return Err(Error::InterleavedMessage("Picking up message in the middle"
+                                                                 .to_string()));
+                    }
+                    self.data.push_str(captures.name("data").unwrap());
+                    if self.data.len() == self.total_bytes {
+                        self.complete = true;
+                    } else if self.data.len() > self.total_bytes {
+                        return Err(Error::InterleavedMessage(format!("Too many bytes in data: {} (expected {})",
+                                                                     self.data.len(),
+                                                                     self.total_bytes)));
+                    }
+                    Ok(())
+                } else {
+                    return Err(Error::InterleavedMessage(format!("Message does not match regex: {}",
+                                                                 data)));
+                }
+            }
+            c => Err(Error::InterleavedMessage(format!("Unrecognized packet type: {}", c))),
+        }
+    }
+
+    pub fn is_complete(&self) -> bool {
+        self.complete
+    }
+}

@@ -41,6 +41,9 @@ pub mod api;
 pub mod atlas;
 pub mod camera;
 
+mod convert;
+mod sutron;
+
 pub use api::Api;
 pub use atlas::Heartbeat;
 pub use camera::{Camera, Image};

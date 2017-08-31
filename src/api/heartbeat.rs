@@ -20,8 +20,9 @@ impl Config {
         let mut heartbeats = heartbeat::read_sbd(&self.path, &self.imei)
             .map(|read_sbd| read_sbd.filter_map(|result| result.ok()).collect::<Vec<_>>())
             .unwrap();
-        heartbeats.sort_by(|a, b| b.cmp(&a));
-        assert!(heartbeats.len() > 0);
+        heartbeats.sort_by(|a, b| b.cmp(a));
+        // FIXME
+        assert!(!heartbeats.is_empty());
         let latest = heartbeats[0];
         Ok(Status {
                last_heartbeat_received: latest.datetime.to_rfc3339(),

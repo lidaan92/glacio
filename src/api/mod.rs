@@ -51,7 +51,7 @@ impl Key for Heartbeats {
     type Value = HeartbeatConfig;
 }
 
-fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
+fn json_response<S: Serialize>(data: &S) -> IronResult<Response> {
     let mut response = Response::with((status::Ok, itry!(serde_json::to_string(&data))));
     response.headers.set(ContentType::json());
     Ok(response)
@@ -61,7 +61,7 @@ fn cameras(request: &mut Request) -> IronResult<Response> {
     let arc = request.get::<Read<Cameras>>().unwrap();
     let cameras = arc.as_ref();
     let cameras = cameras.values().map(|camera| camera.summary(request)).collect::<Vec<_>>();
-    json_response(cameras)
+    json_response(&cameras)
 }
 
 fn camera(request: &mut Request) -> IronResult<Response> {
@@ -73,7 +73,7 @@ fn camera(request: &mut Request) -> IronResult<Response> {
         .find("name")
         .unwrap();
     let camera = iexpect!(cameras.get(name));
-    json_response(camera.detail(request))
+    json_response(&camera.detail(request))
 }
 
 fn camera_images(request: &mut Request) -> IronResult<Response> {
@@ -88,13 +88,13 @@ fn camera_images(request: &mut Request) -> IronResult<Response> {
         .unwrap()
         .to_string();
     let camera = iexpect!(cameras.get(&name));
-    json_response(itry!(camera.images(request, image_server)))
+    json_response(&itry!(camera.images(request, image_server)))
 }
 
 fn atlas_status(request: &mut Request) -> IronResult<Response> {
     let heartbeats_arc = request.get::<Read<Heartbeats>>().unwrap();
     let heartbeats = heartbeats_arc.as_ref();
-    json_response(itry!(heartbeats.status(request)))
+    json_response(&itry!(heartbeats.status(request)))
 }
 
 impl Api {
@@ -134,7 +134,7 @@ impl Config {
     fn cameras(&self) -> HashMap<String, CameraConfig> {
         self.cameras
             .iter()
-            .map(|&ref config| (config.name.clone(), config.clone()))
+            .map(|config| (config.name.clone(), config.clone()))
             .collect()
     }
 

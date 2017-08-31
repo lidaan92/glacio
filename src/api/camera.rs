@@ -53,7 +53,7 @@ impl Config {
         images.into_iter()
             .skip(pagination.skip())
             .take(pagination.take())
-            .map(|image| self.image_summary(request, &server, &image))
+            .map(|image| self.image_summary(request, server, &image))
             .collect()
     }
 

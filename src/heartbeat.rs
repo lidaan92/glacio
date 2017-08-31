@@ -160,9 +160,7 @@ impl InterleavedMessage {
                                                                  data)));
                 }
             }
-            c @ _ => {
-                return Err(Error::InterleavedMessage(format!("Unrecognized packet type: {}", c)))
-            }
+            c => Err(Error::InterleavedMessage(format!("Unrecognized packet type: {}", c))),
         }
     }
 

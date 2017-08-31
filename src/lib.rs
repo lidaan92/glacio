@@ -37,7 +37,7 @@ extern crate serde_json;
 extern crate toml;
 extern crate url;
 
-mod api;
+pub mod api;
 pub mod camera;
 pub mod heartbeat;
 

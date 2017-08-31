@@ -1,9 +1,41 @@
+//! HTTP API for glacio data.
+//!
+//! # API methods
+//!
+//! All API calls return JSON. In order to avoid duplication, the JSON structure references are
+//! *not* provided in these documentation. Instead, references are given to the underlying Rust
+//! structures, which are mapped directly onto JSON using `serde_json`. Collections of objects are
+//! returned as arrays, e.g.:
+//!
+//! ```json
+//! [{"name":"Thing 1"},{"name":"Thing 2"}]
+//! ```
+//!
+//! ## `/cameras`
+//!
+//! Returns a summary of all remote cameras, as defined by `glacio::api::CameraSummary`.
+//!
+//! ## `/cameras/<name>`
+//!
+//! Returns detailed information about the camera named `<name>`, as defined by
+//! `glacio::api::CameraDetail`.
+//!
+//! ## `/cameras/<name>/images`
+//!
+//! Returns a list of all images associated with this camera, as defined by
+//! `glacio::api::ImageSummary`.
+//!
+//! ## `/atlas/status`
+//!
+//! Returns the status of the ATLAS system, as defined by `glacio::api::AtlasStatus`.
+
 mod camera;
 mod heartbeat;
 mod pagination;
 
-pub use self::pagination::Pagination;
-
+pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
+pub use self::heartbeat::Status as AtlasStatus;
+use self::pagination::Pagination;
 use {Error, Result};
 use api::camera::Config as CameraConfig;
 use api::heartbeat::Config as HeartbeatConfig;

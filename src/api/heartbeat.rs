@@ -8,11 +8,18 @@ pub struct Config {
     imei: String,
 }
 
+/// The status of the ATLAS system.
+///
+/// Some of this information is taken directly from the last heartbeat, and some of it is
+/// calculated from the ATLAS state machine.
 #[derive(Debug, Serialize)]
 pub struct Status {
-    last_heartbeat_received: String,
-    soc1: f32,
-    soc2: f32,
+    /// The date and time the last heartbeat was received.
+    pub last_heartbeat_received: String,
+    /// The state of charge of battery 1.
+    pub soc1: f32,
+    /// The state of charge of battery 2.
+    pub soc2: f32,
 }
 
 impl Config {

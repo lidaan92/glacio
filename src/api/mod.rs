@@ -20,7 +20,7 @@ use std::io::Read as IoRead;
 use std::path::Path;
 use toml;
 
-/// Iron JSON api for glacio.
+/// The Iron JSON api handler.
 #[allow(missing_debug_implementations)]
 pub struct Api {
     chain: Chain,

@@ -1,3 +1,24 @@
+//! Organize and present remote glacier and weather station data.
+//!
+//! We maintain multiple weather stations, remote LiDAR installations, and remote cameras. Data
+//! from these systems is transmitted to local servers via satellite connections. These data are
+//! housed in various locations:
+//!
+//! - Greg Hanlon's CWMS server
+//! - On lidar.io:
+//!     - In Iridium Short Burst Data (SBD) messages in `/var/iridium`
+//!     - As images in `/home/iridiumcam/StarDot`
+//!
+//! This crate brings together these disparate data sources into a single Rust API, for access, and
+//! a HTTP API server (written in [iron](https://github.com/iron/iron)). This http API is available
+//! at http://api.glac.io.
+//!
+//! See `glacio::Api` for the HTTP API documentation.
+
+#![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
+        trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
+        unused_qualifications)]
+
 extern crate chrono;
 #[macro_use]
 extern crate lazy_static;
@@ -16,10 +37,6 @@ extern crate serde_json;
 extern crate toml;
 extern crate url;
 
-#[deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
-       trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
-       unused_qualifications)]
-
 mod api;
 pub mod camera;
 pub mod heartbeat;
@@ -28,6 +45,7 @@ pub use api::Api;
 pub use camera::{Camera, Image};
 pub use heartbeat::Heartbeat;
 
+/// Our custom error enum.
 #[derive(Debug)]
 pub enum Error {
     /// Wrapper around `chrono::ParseError`.
@@ -36,7 +54,9 @@ pub enum Error {
     Heartbeat(String),
     /// Invalid image filename.
     ImageFilename(String),
-    /// Problem reconstructing an interleaved message.
+    /// Problem reconstructing a Sutron interleaved message.
+    ///
+    /// Interleaved messages are used to send long messages over (byte-limited) Iridium SBD.
     InterleavedMessage(String),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
@@ -138,4 +158,5 @@ impl std::fmt::Display for Error {
     }
 }
 
+/// Our custom result type.
 pub type Result<T> = std::result::Result<T, Error>;

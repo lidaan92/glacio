@@ -40,8 +40,8 @@ impl Config {
         }
     }
 
-    pub fn detail(&self, request: &Request) -> Detail {
-        unimplemented!()
+    pub fn detail(&self, _: &Request) -> Detail {
+        Detail
     }
 
     pub fn images(&self, request: &mut Request, server: &Server) -> Result<Vec<ImageSummary>> {
@@ -61,11 +61,7 @@ impl Config {
         Camera::new(&self.path)
     }
 
-    fn image_summary(&self,
-                     request: &Request,
-                     server: &Server,
-                     image: &Image)
-                     -> Result<ImageSummary> {
+    fn image_summary(&self, _: &Request, server: &Server, image: &Image) -> Result<ImageSummary> {
         Ok(ImageSummary {
                camera_name: self.name.to_string(),
                datetime: image.datetime().to_rfc3339(),

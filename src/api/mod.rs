@@ -54,7 +54,6 @@ impl Key for Heartbeats {
 fn json_response<S: Serialize>(data: S) -> IronResult<Response> {
     let mut response = Response::with((status::Ok, itry!(serde_json::to_string(&data))));
     response.headers.set(ContentType::json());
-    response.headers.set(AccessControlAllowOrigin::Any);
     Ok(response)
 }
 
@@ -146,6 +145,15 @@ impl Config {
 
 impl Handler for Api {
     fn handle(&self, request: &mut Request) -> IronResult<Response> {
-        self.chain.handle(request)
+        self.chain
+            .handle(request)
+            .map(|mut response| {
+                     response.headers.set(AccessControlAllowOrigin::Any);
+                     response
+                 })
+            .map_err(|mut iron_error| {
+                         iron_error.response.headers.set(AccessControlAllowOrigin::Any);
+                         iron_error
+                     })
     }
 }

@@ -16,7 +16,7 @@ pub struct Status {
 }
 
 impl Config {
-    pub fn status(&self, request: &Request) -> Result<Status> {
+    pub fn status(&self, _: &Request) -> Result<Status> {
         let mut heartbeats = heartbeat::read_sbd(&self.path, &self.imei)
             .map(|read_sbd| read_sbd.filter_map(|result| result.ok()).collect::<Vec<_>>())
             .unwrap();

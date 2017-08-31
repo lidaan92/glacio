@@ -22,8 +22,8 @@
 //! `Result<Heartbeat, Error>`. To get all version 3 heartbeats:
 //!
 //! ```
-//! # use glacio::heartbeat;
-//! let heartbeats = heartbeat::read_sbd("data", "300234063556840")
+//! # use glacio::atlas;
+//! let heartbeats = atlas::read_sbd("data", "300234063556840")
 //!     .unwrap()
 //!     .filter_map(|result| result.ok())
 //!     .collect::<Vec<_>>();
@@ -49,8 +49,8 @@ use std::vec::IntoIter;
 /// # Examples
 ///
 /// ```
-/// # use glacio::heartbeat;
-/// for result in heartbeat::read_sbd("data", "300234063556840").unwrap() {
+/// # use glacio::atlas;
+/// for result in atlas::read_sbd("data", "300234063556840").unwrap() {
 ///     let heartbeat = result.unwrap();
 ///     println!("{:?}", heartbeat);
 /// }

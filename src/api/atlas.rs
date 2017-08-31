@@ -1,4 +1,4 @@
-use {Result, heartbeat};
+use {Result, atlas};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -24,7 +24,8 @@ pub struct Status {
 
 impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
-        let mut heartbeats = heartbeat::read_sbd(&self.path, &self.imei)
+        /// TODO we should have a more robust reader for sbd.
+        let mut heartbeats = atlas::read_sbd(&self.path, &self.imei)
             .map(|read_sbd| read_sbd.filter_map(|result| result.ok()).collect::<Vec<_>>())
             .unwrap();
         heartbeats.sort_by(|a, b| b.cmp(a));

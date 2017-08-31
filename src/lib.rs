@@ -38,12 +38,12 @@ extern crate toml;
 extern crate url;
 
 pub mod api;
+pub mod atlas;
 pub mod camera;
-pub mod heartbeat;
 
 pub use api::Api;
+pub use atlas::Heartbeat;
 pub use camera::{Camera, Image};
-pub use heartbeat::Heartbeat;
 
 /// Our custom error enum.
 #[derive(Debug)]

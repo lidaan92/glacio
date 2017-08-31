@@ -29,16 +29,16 @@
 //!
 //! Returns the status of the ATLAS system, as defined by `glacio::api::AtlasStatus`.
 
+mod atlas;
 mod camera;
-mod heartbeat;
 mod pagination;
 
+pub use self::atlas::Status as AtlasStatus;
 pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
-pub use self::heartbeat::Status as AtlasStatus;
 use self::pagination::Pagination;
 use {Error, Result};
+use api::atlas::Config as HeartbeatConfig;
 use api::camera::Config as CameraConfig;
-use api::heartbeat::Config as HeartbeatConfig;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::{AccessControlAllowOrigin, ContentType};
 use iron::typemap::Key;

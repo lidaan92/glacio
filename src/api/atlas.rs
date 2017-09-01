@@ -26,10 +26,12 @@ pub struct Status {
 
 impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
-        let mut heartbeats: Vec<Heartbeat> = SbdSource::new(&self.path).imeis(&[&self.imei])
+        let mut heartbeats: Vec<Heartbeat> = SbdSource::new(&self.path)
+            .imeis(&[&self.imei])
             .versions(&self.versions)
             .iter()?
-            .collect::<Result<_>>()?;
+            .flat_map(|result| result.ok())
+            .collect();
         heartbeats.sort_by(|a, b| b.cmp(a));
         if heartbeats.is_empty() {
             return Err(Error::ApiConfig("no heartbeats found".to_string()));

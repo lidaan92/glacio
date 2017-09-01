@@ -1,16 +1,26 @@
 use Result;
 use iron::{Plugin, Request};
 use params::{Params, Value};
+use std::iter::{Skip, Take};
 
 const DEFAULT_PAGE: usize = 1;
 const DEFAULT_PER_PAGE: usize = 30;
 const MAX_PER_PAGE: usize = 100;
 
-/// Structure for parsing pagination parameters out of a request.
-#[derive(Clone, Copy, Debug)]
-pub struct Pagination {
+pub trait Paginate<I> {
+    fn paginate(self, request: &mut Request) -> Result<Take<Skip<I>>>;
+}
+
+struct Pagination {
     page: usize,
     per_page: usize,
+}
+
+impl<I: Iterator> Paginate<I> for I {
+    fn paginate(self, request: &mut Request) -> Result<Take<Skip<I>>> {
+        let pagination = Pagination::new(request)?;
+        Ok(self.skip(pagination.skip()).take(pagination.take()))
+    }
 }
 
 impl Pagination {

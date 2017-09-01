@@ -1,5 +1,5 @@
 use {Camera, Image, Result};
-use api::Pagination;
+use api::Paginate;
 use camera::Server;
 use iron::Request;
 
@@ -68,14 +68,12 @@ impl Config {
     }
 
     pub fn images(&self, request: &mut Request, server: &Server) -> Result<Vec<ImageSummary>> {
-        let pagination = Pagination::new(request)?;
         let mut images = self.camera()
             .and_then(|camera| camera.images())
             .and_then(|images| images.collect::<Result<Vec<_>>>())?;
         images.sort_by(|a, b| b.cmp(a));
         images.into_iter()
-            .skip(pagination.skip())
-            .take(pagination.take())
+            .paginate(request)?
             .map(|image| self.image_summary(request, server, &image))
             .collect()
     }

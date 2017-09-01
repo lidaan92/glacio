@@ -38,7 +38,7 @@ mod pagination;
 pub use self::atlas::Status as AtlasStatus;
 pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
 use self::config::{Config, PersistentConfig};
-use self::pagination::Pagination;
+use self::pagination::Paginate;
 use {Error, Result};
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::headers::AccessControlAllowOrigin;

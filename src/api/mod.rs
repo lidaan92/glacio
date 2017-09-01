@@ -31,12 +31,12 @@
 
 mod atlas;
 mod camera;
+mod config;
 mod pagination;
 
-use self::atlas::Config as AtlasConfig;
 pub use self::atlas::Status as AtlasStatus;
 pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
-use self::camera::Config as CameraConfig;
+use self::config::Config;
 use self::pagination::Pagination;
 use {Error, Result};
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
@@ -46,7 +46,6 @@ use persistent::Read;
 use router::Router;
 use serde::Serialize;
 use serde_json;
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read as IoRead;
 use std::path::Path;
@@ -58,29 +57,10 @@ pub struct Api {
     chain: Chain,
 }
 
-#[derive(Deserialize, Debug)]
-struct Config {
-    atlas: AtlasConfig,
-    image_document_root: String,
-    cameras: Vec<CameraConfig>,
-}
-
 #[derive(Copy, Clone, Debug)]
-struct Cameras;
-impl Key for Cameras {
-    type Value = HashMap<String, CameraConfig>;
-}
-
-#[derive(Copy, Clone, Debug)]
-struct ImageServer;
-impl Key for ImageServer {
-    type Value = super::camera::Server;
-}
-
-#[derive(Copy, Clone, Debug)]
-struct Atlas;
-impl Key for Atlas {
-    type Value = AtlasConfig;
+struct PersistentConfig;
+impl Key for PersistentConfig {
+    type Value = Config;
 }
 
 fn json_response<S: Serialize>(data: &S) -> IronResult<Response> {
@@ -90,43 +70,46 @@ fn json_response<S: Serialize>(data: &S) -> IronResult<Response> {
 }
 
 fn cameras(request: &mut Request) -> IronResult<Response> {
-    let arc = request.get::<Read<Cameras>>().unwrap();
-    let cameras = arc.as_ref();
-    let cameras = cameras.values().map(|camera| camera.summary(request)).collect::<Vec<_>>();
+    let arc = request.get::<Read<PersistentConfig>>().unwrap();
+    let config = arc.as_ref();
+    let cameras = config.cameras()
+        .values()
+        .map(|camera| camera.summary(request))
+        .collect::<Vec<_>>();
     json_response(&cameras)
 }
 
 fn camera(request: &mut Request) -> IronResult<Response> {
-    let arc = request.get::<Read<Cameras>>().unwrap();
-    let cameras = arc.as_ref();
+    let arc = request.get::<Read<PersistentConfig>>().unwrap();
+    let config = arc.as_ref();
     let name = request.extensions
         .get::<Router>()
         .unwrap()
         .find("name")
         .unwrap();
+    let cameras = config.cameras();
     let camera = iexpect!(cameras.get(name));
     json_response(&camera.detail(request))
 }
 
 fn camera_images(request: &mut Request) -> IronResult<Response> {
-    let cameras_arc = request.get::<Read<Cameras>>().unwrap();
-    let cameras = cameras_arc.as_ref();
-    let image_server_arc = request.get::<Read<ImageServer>>().unwrap();
-    let image_server = image_server_arc.as_ref();
+    let arc = request.get::<Read<PersistentConfig>>().unwrap();
+    let config = arc.as_ref();
     let name = request.extensions
         .get::<Router>()
         .unwrap()
         .find("name")
         .unwrap()
         .to_string();
+    let cameras = config.cameras();
     let camera = iexpect!(cameras.get(&name));
-    json_response(&itry!(camera.images(request, image_server)))
+    json_response(&itry!(camera.images(request, &itry!(config.image_server()))))
 }
 
 fn atlas_status(request: &mut Request) -> IronResult<Response> {
-    let heartbeats_arc = request.get::<Read<Atlas>>().unwrap();
-    let heartbeats = heartbeats_arc.as_ref();
-    json_response(&itry!(heartbeats.status(request)))
+    let arc = request.get::<Read<PersistentConfig>>().unwrap();
+    let config = arc.as_ref();
+    json_response(&itry!(config.atlas.status(request)))
 }
 
 impl Api {
@@ -141,10 +124,10 @@ impl Api {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Api> {
         let mut s = String::new();
         File::open(path).and_then(|mut read| read.read_to_string(&mut s))?;
-        toml::from_str(&s).map_err(Error::from).and_then(|config| Api::new(&config))
+        toml::from_str(&s).map_err(Error::from).and_then(|config| Api::new(config))
     }
 
-    fn new(config: &Config) -> Result<Api> {
+    fn new(config: Config) -> Result<Api> {
         let mut router = Router::new();
         router.get("/cameras", cameras, "cameras");
         router.get("/cameras/:name", camera, "camera");
@@ -152,26 +135,9 @@ impl Api {
         router.get("/atlas/status", atlas_status, "atlas_status");
 
         let mut chain = Chain::new(router);
-        let cameras = config.cameras();
-        let image_server = config.image_server()?;
-        chain.link(Read::<Cameras>::both(cameras));
-        chain.link(Read::<ImageServer>::both(image_server));
-        chain.link(Read::<Atlas>::both(config.atlas.clone()));
+        chain.link(Read::<PersistentConfig>::both(config));
 
         Ok(Api { chain: chain })
-    }
-}
-
-impl Config {
-    fn cameras(&self) -> HashMap<String, CameraConfig> {
-        self.cameras
-            .iter()
-            .map(|config| (config.name.clone(), config.clone()))
-            .collect()
-    }
-
-    fn image_server(&self) -> Result<super::camera::Server> {
-        super::camera::Server::new(&self.image_document_root)
     }
 }
 

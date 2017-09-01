@@ -1,12 +1,33 @@
+extern crate docopt;
 extern crate glacio;
 extern crate iron;
+#[macro_use]
+extern crate serde_derive;
 
+use docopt::Docopt;
 use glacio::Api;
 use iron::Iron;
 
+const USAGE: &'static str = "
+Glacier research data collection and dissemination.
+
+Usage:
+    glacio api <config> <addr>
+
+Options:
+    -h --help           Show this screen.
+";
+
+#[derive(Debug, Deserialize)]
+struct Args {
+    cmd_api: bool,
+    arg_addr: String,
+    arg_config: String,
+}
+
 fn main() {
-    let path = std::env::args().nth(1).unwrap();
-    let api = Api::from_path(path).unwrap();
-    println!("Serving glacio-api on http://localhost:3000");
-    Iron::new(api).http("localhost:3000").unwrap();
+    let args: Args = Docopt::new(USAGE).and_then(|d| d.deserialize()).unwrap_or_else(|e| e.exit());
+    let api = Api::from_path(args.arg_config).unwrap();
+    println!("Serving glacio api on http://{}", args.arg_addr);
+    Iron::new(api).http(args.arg_addr).unwrap();
 }

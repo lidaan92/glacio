@@ -32,20 +32,18 @@
 mod atlas;
 mod camera;
 mod config;
+mod handlers;
 mod pagination;
 
 pub use self::atlas::Status as AtlasStatus;
 pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
-use self::config::Config;
+use self::config::{Config, PersistentConfig};
 use self::pagination::Pagination;
 use {Error, Result};
-use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
-use iron::headers::{AccessControlAllowOrigin, ContentType};
-use iron::typemap::Key;
+use iron::{Chain, Handler, IronResult, Request, Response};
+use iron::headers::AccessControlAllowOrigin;
 use persistent::Read;
 use router::Router;
-use serde::Serialize;
-use serde_json;
 use std::fs::File;
 use std::io::Read as IoRead;
 use std::path::Path;
@@ -55,61 +53,6 @@ use toml;
 #[allow(missing_debug_implementations)]
 pub struct Api {
     chain: Chain,
-}
-
-#[derive(Copy, Clone, Debug)]
-struct PersistentConfig;
-impl Key for PersistentConfig {
-    type Value = Config;
-}
-
-fn json_response<S: Serialize>(data: &S) -> IronResult<Response> {
-    let mut response = Response::with((status::Ok, itry!(serde_json::to_string(&data))));
-    response.headers.set(ContentType::json());
-    Ok(response)
-}
-
-fn cameras(request: &mut Request) -> IronResult<Response> {
-    let arc = request.get::<Read<PersistentConfig>>().unwrap();
-    let config = arc.as_ref();
-    let cameras = config.cameras()
-        .values()
-        .map(|camera| camera.summary(request))
-        .collect::<Vec<_>>();
-    json_response(&cameras)
-}
-
-fn camera(request: &mut Request) -> IronResult<Response> {
-    let arc = request.get::<Read<PersistentConfig>>().unwrap();
-    let config = arc.as_ref();
-    let name = request.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("name")
-        .unwrap();
-    let cameras = config.cameras();
-    let camera = iexpect!(cameras.get(name));
-    json_response(&camera.detail(request))
-}
-
-fn camera_images(request: &mut Request) -> IronResult<Response> {
-    let arc = request.get::<Read<PersistentConfig>>().unwrap();
-    let config = arc.as_ref();
-    let name = request.extensions
-        .get::<Router>()
-        .unwrap()
-        .find("name")
-        .unwrap()
-        .to_string();
-    let cameras = config.cameras();
-    let camera = iexpect!(cameras.get(&name));
-    json_response(&itry!(camera.images(request, &itry!(config.image_server()))))
-}
-
-fn atlas_status(request: &mut Request) -> IronResult<Response> {
-    let arc = request.get::<Read<PersistentConfig>>().unwrap();
-    let config = arc.as_ref();
-    json_response(&itry!(config.atlas.status(request)))
 }
 
 impl Api {
@@ -129,10 +72,12 @@ impl Api {
 
     fn new(config: Config) -> Result<Api> {
         let mut router = Router::new();
-        router.get("/cameras", cameras, "cameras");
-        router.get("/cameras/:name", camera, "camera");
-        router.get("/cameras/:name/images", camera_images, "camera_images");
-        router.get("/atlas/status", atlas_status, "atlas_status");
+        router.get("/cameras", handlers::cameras, "cameras");
+        router.get("/cameras/:name", handlers::camera, "camera");
+        router.get("/cameras/:name/images",
+                   handlers::camera_images,
+                   "camera_images");
+        router.get("/atlas/status", handlers::atlas_status, "atlas_status");
 
         let mut chain = Chain::new(router);
         chain.link(Read::<PersistentConfig>::both(config));

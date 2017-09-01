@@ -21,9 +21,10 @@
 
 extern crate chrono;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate iron;
+#[macro_use]
+extern crate lazy_static;
+extern crate logger;
 extern crate params;
 extern crate persistent;
 extern crate regex;

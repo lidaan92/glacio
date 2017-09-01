@@ -1,5 +1,6 @@
 extern crate docopt;
 extern crate glacio;
+extern crate env_logger;
 extern crate iron;
 #[macro_use]
 extern crate serde_derive;
@@ -26,6 +27,7 @@ struct Args {
 }
 
 fn main() {
+    env_logger::init().unwrap();
     let args: Args = Docopt::new(USAGE).and_then(|d| d.deserialize()).unwrap_or_else(|e| e.exit());
     let api = Api::from_path(args.arg_config).unwrap();
     println!("Serving glacio api on http://{}", args.arg_addr);

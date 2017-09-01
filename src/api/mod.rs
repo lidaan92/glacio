@@ -42,6 +42,7 @@ use self::pagination::Paginate;
 use {Error, Result};
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::headers::AccessControlAllowOrigin;
+use logger::Logger;
 use persistent::Read;
 use router::Router;
 use std::fs::File;
@@ -81,6 +82,7 @@ impl Api {
 
         let mut chain = Chain::new(router);
         chain.link(Read::<PersistentConfig>::both(config));
+        chain.link(Logger::new(None));
 
         Ok(Api { chain: chain })
     }

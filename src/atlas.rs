@@ -154,6 +154,7 @@ impl SbdSource {
                 messages.extend(storage.messages_from_imei(imei)?);
             }
         }
+        messages.sort_by(|a, b| a.time_of_session().cmp(&b.time_of_session()));
         Ok(ReadSbd {
                iter: messages.into_iter(),
                versions: self.versions.clone(),

@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn message_add_self_timed() {
         let mut message = Message::new();
-        message = message.add(SELF_TIMED).unwrap();
+        message = message.push(SELF_TIMED).unwrap();
         assert!(message.is_complete());
         assert_eq!("ATHB03313", String::from(message));
     }
@@ -171,11 +171,11 @@ mod tests {
     #[test]
     fn message_add_self_timed_extended() {
         let mut message = Message::new();
-        message = message.add(SELF_TIMED_EXTENDED_0).unwrap();
+        message = message.push(SELF_TIMED_EXTENDED_0).unwrap();
         assert!(!message.is_complete());
-        message = message.add(SELF_TIMED_EXTENDED_1).unwrap();
+        message = message.push(SELF_TIMED_EXTENDED_1).unwrap();
         assert!(message.is_complete());
         assert_eq!(354, String::from(message.clone()).len());
-        assert!(message.add(SELF_TIMED_EXTENDED_1).is_err());
+        assert!(message.push(SELF_TIMED_EXTENDED_1).is_err());
     }
 }

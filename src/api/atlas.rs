@@ -1,4 +1,4 @@
-use {Result, atlas};
+use {Error, Result, atlas};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -30,8 +30,9 @@ impl Config {
             .map(|read_sbd| read_sbd.filter_map(|result| result.ok()).collect::<Vec<_>>())
             .unwrap();
         heartbeats.sort_by(|a, b| b.cmp(a));
-        // FIXME
-        assert!(!heartbeats.is_empty());
+        if heartbeats.is_empty() {
+            return Err(Error::ApiConfig("no heartbeats found".to_string()));
+        }
         let latest = heartbeats[0];
         Ok(Status {
                last_heartbeat_received: latest.datetime.to_rfc3339(),

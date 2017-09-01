@@ -52,6 +52,8 @@ pub use camera::{Camera, Image};
 pub enum Error {
     /// Wrapper around `chrono::ParseError`.
     ChronoParse(chrono::ParseError),
+    /// The api configuration is bad.
+    ApiConfig(String),
     /// The ATLAS heartbeat was invalid.
     Heartbeat(String),
     /// Invalid image filename.
@@ -127,6 +129,7 @@ impl From<url::ParseError> for Error {
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
+            Error::ApiConfig(_) => "invalid api configuration",
             Error::ChronoParse(ref err) => err.description(),
             Error::Heartbeat(_) => "error parsing heartbeat",
             Error::ImageFilename(_) => "invalid image filename",
@@ -145,6 +148,7 @@ impl std::error::Error for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
+            Error::ApiConfig(ref msg) => write!(f, "invalid api configuration: {}", msg),
             Error::ChronoParse(ref err) => err.fmt(f),
             Error::Heartbeat(ref msg) => write!(f, "error parsing heartbeat: {}", msg),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),

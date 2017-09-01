@@ -1,4 +1,5 @@
-use {Error, Result, atlas};
+use {Error, Result};
+use atlas::{Heartbeat, SbdSource};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -25,10 +26,10 @@ pub struct Status {
 
 impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
-        // TODO we should have a more robust reader for sbd.
-        let mut heartbeats = atlas::read_sbd(&self.path, &self.imei)
-            .map(|read_sbd| read_sbd.filter_map(|result| result.ok()).collect::<Vec<_>>())
-            .unwrap();
+        let mut heartbeats: Vec<Heartbeat> = SbdSource::new(&self.path).imeis(&[&self.imei])
+            .versions(&self.versions)
+            .iter()?
+            .collect::<Result<_>>()?;
         heartbeats.sort_by(|a, b| b.cmp(a));
         if heartbeats.is_empty() {
             return Err(Error::ApiConfig("no heartbeats found".to_string()));

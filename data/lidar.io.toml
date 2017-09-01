@@ -7,15 +7,10 @@ versions = [3]
 
 [[cameras]]
 name = "ATLAS_CAM"
-description = "Single netcam, installed in 2015, that watches the ATLAS system from above."
+description = "ATLAS_CAM is a single remote camera, perched above the ATLAS system with the Helheim Glacier in the background. ATLAS_CAM was installed in 2015 as part of the initial ATLAS installation."
 path = "/home/iridiumcam/StarDot/ATLAS_CAM"
 
 [[cameras]]
 name = "ATLAS_CAM2"
-description = "Single netcam, installed in 2016, that watches the ATLAS system from the side."
+description = "ATLAS_CAM2 is a single remote camera, mounted on a tripod next to the ATLAS system at close range; it was installed in the summer of 2016. ATLAS_CAM2 is timed to take pictures while the scanner is working, as indicated by the red lights on the housing."
 path = "/home/iridiumcam/StarDot/ATLAS_CAM2"
-
-[[cameras]]
-name = "HEL_BERGCAM3_1"
-description = "One of two netcams, installed in 2017, pointed at the Helheim Glacier from the north side of the fjord."
-path = "/home/iridiumcam/StarDot/HEL_BERGCAM3/StarDot1"

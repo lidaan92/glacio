@@ -253,14 +253,16 @@ mod tests {
     fn heartbeats() {
         let read_sbd = SbdSource::new("data").iter().unwrap();
         let heartbeats = read_sbd.collect::<Vec<Result<Heartbeat>>>();
-        assert_eq!(2, heartbeats.len());
-        assert!(heartbeats.iter().all(|result| result.is_ok()));
+        assert_eq!(3, heartbeats.len());
     }
 
     #[test]
     fn heartbeat_parsing() {
-        let mut read_sbd = SbdSource::new("data").iter().unwrap();
-        let heartbeat = read_sbd.next().unwrap().unwrap();
+        let read_sbd = SbdSource::new("data").iter().unwrap();
+        let heartbeat = read_sbd.skip(1)
+            .next()
+            .unwrap()
+            .unwrap();
         assert_eq!(94.208, heartbeat.soc1);
         assert_eq!(94.947, heartbeat.soc2);
     }

@@ -29,10 +29,11 @@ pub fn camera(request: &mut Request) -> IronResult<Response> {
         .get::<Router>()
         .unwrap()
         .find("name")
-        .unwrap();
+        .unwrap()
+        .to_string();
     let cameras = config.cameras();
-    let camera = iexpect!(cameras.get(name));
-    json_response(&camera.detail(request))
+    let camera = iexpect!(cameras.get(&name));
+    json_response(&itry!(camera.detail(request, &itry!(config.image_server()))))
 }
 
 pub fn camera_images(request: &mut Request) -> IronResult<Response> {

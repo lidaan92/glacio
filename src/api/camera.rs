@@ -1,4 +1,4 @@
-use {Camera, Image, Result};
+use {Camera, Error, Image, Result};
 use api::Paginate;
 use camera::Server;
 use iron::Request;
@@ -38,6 +38,8 @@ pub struct Detail {
     pub url: String,
     /// The url of this camera's images.
     pub images_url: String,
+    /// The latest image from this camera.
+    pub latest_image: ImageSummary,
 }
 
 /// A summary of infromation about an image.
@@ -63,8 +65,19 @@ impl Config {
         }
     }
 
-    pub fn detail(&self, request: &Request) -> Detail {
-        self.summary(request).into()
+    pub fn detail(&self, request: &mut Request, server: &Server) -> Result<Detail> {
+        let summary = self.summary(request);
+        let images = self.images(request, server)?;
+        let image = images.into_iter()
+            .next()
+            .ok_or(Error::ApiConfig(format!("No images for {}", self.name)))?;
+        Ok(Detail {
+               name: summary.name,
+               description: summary.description,
+               url: summary.url,
+               images_url: summary.images_url,
+               latest_image: image,
+           })
     }
 
     pub fn images(&self, request: &mut Request, server: &Server) -> Result<Vec<ImageSummary>> {
@@ -88,16 +101,5 @@ impl Config {
                datetime: image.datetime().to_rfc3339(),
                url: server.url_for(image)?.to_string(),
            })
-    }
-}
-
-impl From<Summary> for Detail {
-    fn from(summary: Summary) -> Detail {
-        Detail {
-            name: summary.name,
-            description: summary.description,
-            url: summary.url,
-            images_url: summary.images_url,
-        }
     }
 }

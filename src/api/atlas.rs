@@ -31,18 +31,21 @@ pub struct BatteryStatus {
     pub state_of_charge: f32,
 }
 
+/// A record of the power status at a given time.
+#[derive(Debug, Serialize)]
+pub struct PowerHistory {
+    /// The date and time of the records.
+    pub datetime: Vec<String>,
+    /// The state of charge of battery 1.
+    pub state_of_charge_1: Vec<f32>,
+    /// The state of charge of battery 2.
+    pub state_of_charge_2: Vec<f32>,
+}
+
 impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
-        let mut heartbeats: Vec<Heartbeat> = SbdSource::new(&self.path)
-            .imeis(&[&self.imei])
-            .versions(&self.versions)
-            .iter()?
-            .flat_map(|result| result.ok())
-            .collect();
+        let mut heartbeats = self.heartbeats()?;
         heartbeats.sort_by(|a, b| b.cmp(a));
-        if heartbeats.is_empty() {
-            return Err(Error::ApiConfig("no heartbeats found".to_string()));
-        }
         let latest = heartbeats[0];
         Ok(Status {
                last_heartbeat_received: latest.datetime.to_rfc3339(),
@@ -55,5 +58,36 @@ impl Config {
                                    state_of_charge: latest.soc2,
                                }],
            })
+    }
+
+    pub fn power_history(&self, _: &Request) -> Result<PowerHistory> {
+        let mut heartbeats = self.heartbeats()?;
+        heartbeats.sort();
+        let mut datetime = Vec::new();
+        let mut state_of_charge_1 = Vec::new();
+        let mut state_of_charge_2 = Vec::new();
+        for heartbeat in heartbeats {
+            datetime.push(heartbeat.datetime.to_rfc3339());
+            state_of_charge_1.push(heartbeat.soc1);
+            state_of_charge_2.push(heartbeat.soc1);
+        }
+        Ok(PowerHistory {
+               datetime: datetime,
+               state_of_charge_1: state_of_charge_1,
+               state_of_charge_2: state_of_charge_2,
+           })
+    }
+
+    fn heartbeats(&self) -> Result<Vec<Heartbeat>> {
+        let heartbeats: Vec<Heartbeat> = SbdSource::new(&self.path)
+            .imeis(&[&self.imei])
+            .versions(&self.versions)
+            .iter()?
+            .flat_map(|result| result.ok())
+            .collect();
+        if heartbeats.is_empty() {
+            return Err(Error::ApiConfig("no heartbeats found".to_string()));
+        }
+        Ok(heartbeats)
     }
 }

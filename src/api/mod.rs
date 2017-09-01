@@ -79,6 +79,9 @@ impl Api {
                    handlers::camera_images,
                    "camera_images");
         router.get("/atlas/status", handlers::atlas_status, "atlas_status");
+        router.get("/atlas/power/history",
+                   handlers::atlas_power_history,
+                   "atlas_power_history");
 
         let mut chain = Chain::new(router);
         chain.link(Read::<PersistentConfig>::both(config));

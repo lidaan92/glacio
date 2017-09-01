@@ -54,3 +54,9 @@ pub fn atlas_status(request: &mut Request) -> IronResult<Response> {
     let config = arc.as_ref();
     json_response(&itry!(config.atlas.status(request)))
 }
+
+pub fn atlas_power_history(request: &mut Request) -> IronResult<Response> {
+    let arc = request.get::<Read<PersistentConfig>>().unwrap();
+    let config = arc.as_ref();
+    json_response(&itry!(config.atlas.power_history(request)))
+}

@@ -18,10 +18,17 @@ pub struct Config {
 pub struct Status {
     /// The date and time the last heartbeat was received.
     pub last_heartbeat_received: String,
-    /// The state of charge of battery 1.
-    pub soc1: f32,
-    /// The state of charge of battery 2.
-    pub soc2: f32,
+    /// All batteries hooked into the system.
+    pub batteries: Vec<BatteryStatus>,
+}
+
+/// The status of an ATLAS battery.
+#[derive(Clone, Copy, Debug, Serialize)]
+pub struct BatteryStatus {
+    /// The identification number of the battery.
+    pub id: u8,
+    /// The state of charge of the battery, as a percentage.
+    pub state_of_charge: f32,
 }
 
 impl Config {
@@ -39,8 +46,14 @@ impl Config {
         let latest = heartbeats[0];
         Ok(Status {
                last_heartbeat_received: latest.datetime.to_rfc3339(),
-               soc1: latest.soc1,
-               soc2: latest.soc2,
+               batteries: vec![BatteryStatus {
+                                   id: 1,
+                                   state_of_charge: latest.soc1,
+                               },
+                               BatteryStatus {
+                                   id: 2,
+                                   state_of_charge: latest.soc2,
+                               }],
            })
     }
 }

@@ -1,8 +1,9 @@
 image_document_root = "/Users/rdcrlpjg/iridiumcam/StarDot"
 
-[heartbeats]
+[atlas]
 path = "/Users/rdcrlpjg/iridium"
 imei = "300234063556840"
+versions = [3]
 
 [[cameras]]
 name = "ATLAS_CAM"

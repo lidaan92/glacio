@@ -6,6 +6,7 @@ use std::path::PathBuf;
 pub struct Config {
     path: PathBuf,
     imei: String,
+    versions: Vec<u8>,
 }
 
 /// The status of the ATLAS system.

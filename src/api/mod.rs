@@ -33,12 +33,12 @@ mod atlas;
 mod camera;
 mod pagination;
 
+use self::atlas::Config as AtlasConfig;
 pub use self::atlas::Status as AtlasStatus;
 pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
+use self::camera::Config as CameraConfig;
 use self::pagination::Pagination;
 use {Error, Result};
-use api::atlas::Config as HeartbeatConfig;
-use api::camera::Config as CameraConfig;
 use iron::{Chain, Handler, IronResult, Plugin, Request, Response, status};
 use iron::headers::{AccessControlAllowOrigin, ContentType};
 use iron::typemap::Key;
@@ -60,7 +60,7 @@ pub struct Api {
 
 #[derive(Deserialize, Debug)]
 struct Config {
-    heartbeats: HeartbeatConfig,
+    atlas: AtlasConfig,
     image_document_root: String,
     cameras: Vec<CameraConfig>,
 }
@@ -78,9 +78,9 @@ impl Key for ImageServer {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct Heartbeats;
-impl Key for Heartbeats {
-    type Value = HeartbeatConfig;
+struct Atlas;
+impl Key for Atlas {
+    type Value = AtlasConfig;
 }
 
 fn json_response<S: Serialize>(data: &S) -> IronResult<Response> {
@@ -124,7 +124,7 @@ fn camera_images(request: &mut Request) -> IronResult<Response> {
 }
 
 fn atlas_status(request: &mut Request) -> IronResult<Response> {
-    let heartbeats_arc = request.get::<Read<Heartbeats>>().unwrap();
+    let heartbeats_arc = request.get::<Read<Atlas>>().unwrap();
     let heartbeats = heartbeats_arc.as_ref();
     json_response(&itry!(heartbeats.status(request)))
 }
@@ -156,7 +156,7 @@ impl Api {
         let image_server = config.image_server()?;
         chain.link(Read::<Cameras>::both(cameras));
         chain.link(Read::<ImageServer>::both(image_server));
-        chain.link(Read::<Heartbeats>::both(config.heartbeats.clone()));
+        chain.link(Read::<Atlas>::both(config.atlas.clone()));
 
         Ok(Api { chain: chain })
     }

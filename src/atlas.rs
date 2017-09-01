@@ -37,14 +37,13 @@
 
 use {Error, Result};
 use chrono::{DateTime, Utc};
-use convert::TryInto;
 use regex::Regex;
 use sbd::mo::Message;
 use sbd::storage::{FilesystemStorage, Storage};
 use std::cmp::Ordering;
 use std::path::Path;
 use std::vec::IntoIter;
-use sutron::InterleavedMessage;
+use sutron;
 
 /// Returns a `ReadSbd`, which can iterate over the heartbeats in an sbd storage.
 ///
@@ -91,12 +90,20 @@ impl Iterator for ReadSbd {
     type Item = Result<Heartbeat>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut message = InterleavedMessage::new();
+        let mut message = sutron::Message::new();
+        let mut datetime = None;
         while let Some(sbd_message) = self.iter.next() {
-            match message.add(&sbd_message) {
-                Ok(()) => if message.is_complete() {
-                    return Some(message.try_into());
-                },
+            if datetime.is_none() {
+                datetime = Some(sbd_message.time_of_session());
+            }
+            match message.add(sbd_message.payload_str().unwrap()) {
+                Ok(new_message) => {
+                    if new_message.is_complete() {
+                        return Some(Heartbeat::new(&String::from(new_message), datetime.unwrap()));
+                    } else {
+                        message = new_message;
+                    }
+                }
                 Err(err) => return Some(Err(err)),
             }
         }
@@ -118,10 +125,8 @@ impl Ord for Heartbeat {
     }
 }
 
-impl TryInto<Heartbeat> for InterleavedMessage {
-    type Err = Error;
-
-    fn try_into(self) -> Result<Heartbeat> {
+impl Heartbeat {
+    fn new(message: &str, datetime: DateTime<Utc>) -> Result<Heartbeat> {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"(?x)^ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
                                                 .*\r\n # scanner on
@@ -135,9 +140,9 @@ impl TryInto<Heartbeat> for InterleavedMessage {
                                                 .* # riegl switch
                                                 \z").unwrap();
         }
-        if let Some(captures) = RE.captures(&self.data) {
+        if let Some(captures) = RE.captures(message) {
             Ok(Heartbeat {
-                   datetime: self.datetime.unwrap(),
+                   datetime: datetime,
                    soc1: captures.name("soc1")
                        .unwrap()
                        .parse()?,

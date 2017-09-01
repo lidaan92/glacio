@@ -96,7 +96,7 @@ impl Iterator for ReadSbd {
             if datetime.is_none() {
                 datetime = Some(sbd_message.time_of_session());
             }
-            match message.add(sbd_message.payload_str().unwrap()) {
+            match message.push(sbd_message.payload_str().unwrap()) {
                 Ok(new_message) => {
                     if new_message.is_complete() {
                         return Some(Heartbeat::new(&String::from(new_message), datetime.unwrap()));

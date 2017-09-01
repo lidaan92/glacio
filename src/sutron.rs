@@ -28,18 +28,24 @@ impl From<Message> for String {
     fn from(message: Message) -> String {
         match message {
             Message::Unstarted => String::new(),
-            Message::Incomplete { data, .. } => data,
+            Message::Incomplete { data, .. } |
             Message::Complete(data) => data,
         }
     }
 }
 
-impl Message {
-    pub fn new() -> Message {
+impl Default for Message {
+    fn default() -> Message {
         Message::Unstarted
     }
+}
 
-    pub fn add(self, payload: &str) -> Result<Message> {
+impl Message {
+    pub fn new() -> Message {
+        Default::default()
+    }
+
+    pub fn push(self, payload: &str) -> Result<Message> {
         match (self, payload.parse::<Packet>()?) {
             (Message::Unstarted, Packet::SelfTimed(data)) => {
                 Ok(Message::Complete(data.to_string()))
@@ -106,7 +112,7 @@ impl Message {
 impl From<Packet> for String {
     fn from(packet: Packet) -> String {
         match packet {
-            Packet::SelfTimed(data) => data,
+            Packet::SelfTimed(data) |
             Packet::SelfTimedExtended { data, .. } => data,
         }
     }
@@ -133,7 +139,7 @@ impl FromStr for Packet {
                                .unwrap()
                                .parse()?,
                            total_bytes: captures.name("total_bytes")
-                               .map_or(Ok(None), |s| s.parse().map(|n| Some(n)))?,
+                               .map_or(Ok(None), |s| s.parse().map(Some))?,
                            data: captures.name("data").unwrap().to_string(),
                        })
                 } else {

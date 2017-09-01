@@ -24,7 +24,7 @@ pub struct Status {
 
 impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
-        /// TODO we should have a more robust reader for sbd.
+        // TODO we should have a more robust reader for sbd.
         let mut heartbeats = atlas::read_sbd(&self.path, &self.imei)
             .map(|read_sbd| read_sbd.filter_map(|result| result.ok()).collect::<Vec<_>>())
             .unwrap();

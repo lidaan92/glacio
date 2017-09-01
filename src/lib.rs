@@ -24,6 +24,8 @@ extern crate chrono;
 extern crate iron;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate log;
 extern crate logger;
 extern crate params;
 extern crate persistent;

@@ -22,6 +22,8 @@ pub enum Packet {
         total_bytes: Option<usize>,
         data: String,
     },
+    ForcedTransmission(String),
+    ForcedTransmissionExtended(String),
 }
 
 impl From<Message> for String {
@@ -97,6 +99,12 @@ impl Message {
                 Err(Error::InterleavedMessage("Message is already complete, cannot add more"
                                                   .to_string()))
             }
+            (_, Packet::ForcedTransmission(message)) => {
+                Err(Error::InterleavedMessage(format!("Forced transmission: {}", message)))
+            }
+            (_, Packet::ForcedTransmissionExtended(message)) => {
+                Err(Error::InterleavedMessage(format!("Forced transmission extended: {}", message)))
+            }
         }
     }
 
@@ -113,7 +121,9 @@ impl From<Packet> for String {
     fn from(packet: Packet) -> String {
         match packet {
             Packet::SelfTimed(data) |
-            Packet::SelfTimedExtended { data, .. } => data,
+            Packet::SelfTimedExtended { data, .. } |
+            Packet::ForcedTransmission(data) |
+            Packet::ForcedTransmissionExtended(data) => data,
         }
     }
 }
@@ -147,6 +157,8 @@ impl FromStr for Packet {
                                                           s)))
                 }
             }
+            "8" => Ok(Packet::ForcedTransmission(s[1..].to_string())),
+            "9" => Ok(Packet::ForcedTransmissionExtended(s[1..].to_string())),
             c => Err(Error::InterleavedMessage(format!("Unsupported packet type: {}", c))),
         }
     }

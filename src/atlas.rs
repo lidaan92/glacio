@@ -313,6 +313,16 @@ impl FromStr for Efoy {
     }
 }
 
+impl Efoy {
+    /// Returns true if this efoy is on.
+    pub fn is_on(&self) -> bool {
+        match self.state {
+            EfoyState::AutoOn => true,
+            _ => false,
+        }
+    }
+}
+
 impl FromStr for EfoyState {
     type Err = Error;
     fn from_str(s: &str) -> Result<EfoyState> {

@@ -59,6 +59,10 @@ pub struct PowerHistory {
     pub state_of_charge_1: Vec<f32>,
     /// The state of charge of battery 2.
     pub state_of_charge_2: Vec<f32>,
+    /// Is EFOY 1 on?
+    pub efoy_1_on: Vec<bool>,
+    /// Is EFOY 2 on?
+    pub efoy_2_on: Vec<bool>,
 }
 
 impl Config {
@@ -86,15 +90,21 @@ impl Config {
         let mut datetime = Vec::new();
         let mut state_of_charge_1 = Vec::new();
         let mut state_of_charge_2 = Vec::new();
+        let mut efoy_1_on = Vec::new();
+        let mut efoy_2_on = Vec::new();
         for heartbeat in heartbeats {
             datetime.push(heartbeat.datetime.to_rfc3339());
             state_of_charge_1.push(heartbeat.soc1);
             state_of_charge_2.push(heartbeat.soc1);
+            efoy_1_on.push(heartbeat.efoy1.is_on());
+            efoy_2_on.push(heartbeat.efoy2.is_on());
         }
         Ok(PowerHistory {
                datetime: datetime,
                state_of_charge_1: state_of_charge_1,
                state_of_charge_2: state_of_charge_2,
+               efoy_1_on: efoy_1_on,
+               efoy_2_on: efoy_2_on,
            })
     }
 

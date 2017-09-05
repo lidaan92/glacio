@@ -288,7 +288,6 @@ impl FromStr for Efoy {
                                                     (?P<current>.*)$").unwrap();
         }
         if let Some(captures) = RE.captures(s) {
-            println!("{:?}", captures.name("consumed"));
             Ok(Efoy {
                    state: captures.name("state")
                        .unwrap()

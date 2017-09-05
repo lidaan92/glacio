@@ -46,7 +46,7 @@ impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
         let mut heartbeats = self.heartbeats()?;
         heartbeats.sort_by(|a, b| b.cmp(a));
-        let latest = heartbeats[0];
+        let latest = &heartbeats[0];
         Ok(Status {
                last_heartbeat_received: latest.datetime.to_rfc3339(),
                batteries: vec![BatteryStatus {

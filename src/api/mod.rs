@@ -37,18 +37,16 @@ mod pagination;
 
 pub use self::atlas::Status as AtlasStatus;
 pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
-use self::config::{Config, PersistentConfig};
+pub use self::config::Config;
+use self::config::PersistentConfig;
 use self::pagination::Paginate;
-use {Error, Result};
+use Result;
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::headers::AccessControlAllowOrigin;
 use logger::Logger;
 use persistent::Read;
 use router::Router;
-use std::fs::File;
-use std::io::Read as IoRead;
 use std::path::Path;
-use toml;
 
 /// The Iron JSON api handler.
 #[allow(missing_debug_implementations)]
@@ -66,9 +64,7 @@ impl Api {
     /// let api = Api::from_path("data/rdcrlpjg.toml").unwrap();
     /// ```
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Api> {
-        let mut s = String::new();
-        File::open(path).and_then(|mut read| read.read_to_string(&mut s))?;
-        toml::from_str(&s).map_err(Error::from).and_then(|config| Api::new(config))
+        Config::from_path(path).and_then(|config| Api::new(config))
     }
 
     fn new(config: Config) -> Result<Api> {

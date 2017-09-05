@@ -1,5 +1,5 @@
 use {Error, Result};
-use atlas::{Heartbeat, SbdSource};
+use atlas::{Efoy, Heartbeat, ReadSbd, SbdSource};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -20,6 +20,8 @@ pub struct Status {
     pub last_heartbeat_received: String,
     /// All batteries hooked into the system.
     pub batteries: Vec<BatteryStatus>,
+    /// All the efoys connected into the system.
+    pub efoys: Vec<EfoyStatus>,
 }
 
 /// The status of an ATLAS battery.
@@ -29,6 +31,23 @@ pub struct BatteryStatus {
     pub id: u8,
     /// The state of charge of the battery, as a percentage.
     pub state_of_charge: f32,
+}
+
+/// The status of an EFOY system.
+#[derive(Clone, Debug, Serialize)]
+pub struct EfoyStatus {
+    /// The numeric id of this efoy system.
+    pub id: u8,
+    /// The state of the efoy system.
+    pub state: String,
+    /// The active cartridge.
+    pub cartridge: String,
+    /// The fuel consumed out of this cartridge.
+    pub consumed: f32,
+    /// The voltage level of this efoy.
+    pub voltage: f32,
+    /// The current level of this efoy.
+    pub current: f32,
 }
 
 /// A record of the power status at a given time.
@@ -46,7 +65,7 @@ impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
         let mut heartbeats = self.heartbeats()?;
         heartbeats.sort_by(|a, b| b.cmp(a));
-        let latest = heartbeats[0];
+        let latest = &heartbeats[0];
         Ok(Status {
                last_heartbeat_received: latest.datetime.to_rfc3339(),
                batteries: vec![BatteryStatus {
@@ -57,6 +76,7 @@ impl Config {
                                    id: 2,
                                    state_of_charge: latest.soc2,
                                }],
+               efoys: vec![EfoyStatus::new(1, &latest.efoy1), EfoyStatus::new(2, &latest.efoy2)],
            })
     }
 
@@ -78,16 +98,30 @@ impl Config {
            })
     }
 
-    fn heartbeats(&self) -> Result<Vec<Heartbeat>> {
-        let heartbeats: Vec<Heartbeat> = SbdSource::new(&self.path)
-            .imeis(&[&self.imei])
-            .versions(&self.versions)
-            .iter()?
+    pub fn heartbeats(&self) -> Result<Vec<Heartbeat>> {
+        let heartbeats: Vec<Heartbeat> = self.read_sbd()?
             .flat_map(|result| result.ok())
             .collect();
         if heartbeats.is_empty() {
             return Err(Error::ApiConfig("no heartbeats found".to_string()));
         }
         Ok(heartbeats)
+    }
+
+    pub fn read_sbd(&self) -> Result<ReadSbd> {
+        SbdSource::new(&self.path).imeis(&[&self.imei]).versions(&self.versions).iter()
+    }
+}
+
+impl EfoyStatus {
+    fn new(id: u8, efoy: &Efoy) -> EfoyStatus {
+        EfoyStatus {
+            id: id,
+            state: efoy.state.into(),
+            cartridge: efoy.cartridge.clone(),
+            consumed: efoy.consumed,
+            voltage: efoy.voltage,
+            current: efoy.current,
+        }
     }
 }

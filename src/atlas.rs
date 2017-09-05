@@ -46,6 +46,7 @@ use sbd::mo::Message;
 use sbd::storage::FilesystemStorage;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::vec::IntoIter;
 use sutron;
 
@@ -73,7 +74,7 @@ pub struct ReadSbd {
 ///
 /// These heartbeats are transmitted via Iridium SBD. Because of the SBD message length
 /// restriction, heartbeats may come in one or more messages, and might have to be pieced together.
-#[derive(Clone, Copy, Debug, PartialOrd)]
+#[derive(Clone, Debug, PartialOrd)]
 pub struct Heartbeat {
     /// The version of heartbeat message.
     pub version: u8,
@@ -83,6 +84,36 @@ pub struct Heartbeat {
     pub soc1: f32,
     /// The state of charge of the second battery.
     pub soc2: f32,
+    /// Information about efoy system 1.
+    pub efoy1: Efoy,
+    /// Information about efoy system 2.
+    pub efoy2: Efoy,
+}
+
+/// Heartbeat information about an efoy system.
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
+pub struct Efoy {
+    /// The state of the efoy system at time of heartbeat.
+    pub state: EfoyState,
+    /// The active cartridge.
+    pub cartridge: String,
+    /// The fuel consumed so far by the active cartridge.
+    pub consumed: f32,
+    /// The voltage level of the efoy.
+    pub voltage: f32,
+    /// The current level of the efoy.
+    pub current: f32,
+}
+
+/// The state of the efoy system.
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+pub enum EfoyState {
+    /// The efoy is in auto mode, and is off.
+    AutoOff,
+    /// The efoy is in auto mode, and is on.
+    AutoOn,
+    /// The efoy is heating itself to avoid freezing.
+    FreezeProtection,
 }
 
 impl SbdSource {
@@ -221,8 +252,8 @@ impl Heartbeat {
                                                 .*\r\n # scan stop
                                                 .*\r\n # scan skip
                                                 .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
-                                                .*\r\n # efoy1
-                                                .*\r\n # efoy2
+                                                (?P<efoy1>.*)\r\n # efoy1
+                                                (?P<efoy2>.*)\r\n # efoy2
                                                 .* # riegl switch
                                                 \z").unwrap();
         }
@@ -238,6 +269,12 @@ impl Heartbeat {
                    soc2: captures.name("soc2")
                        .unwrap()
                        .parse()?,
+                   efoy1: captures.name("efoy1")
+                       .unwrap()
+                       .parse()?,
+                   efoy2: captures.name("efoy2")
+                       .unwrap()
+                       .parse()?,
                })
         } else {
             Err(Error::Heartbeat("Unable to parse heartbeat".to_string()))
@@ -245,9 +282,63 @@ impl Heartbeat {
     }
 }
 
+impl FromStr for Efoy {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<Efoy> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?x)^(?P<state>.*),
+                                                    cartridge\s(?P<cartridge>.*)\sconsumed\s(?P<consumed>\d+\.\d+)l,
+                                                    (?P<voltage>.*),
+                                                    (?P<current>.*)$").unwrap();
+        }
+        if let Some(captures) = RE.captures(s) {
+            Ok(Efoy {
+                   state: captures.name("state")
+                       .unwrap()
+                       .parse()?,
+                   cartridge: captures.name("cartridge").unwrap().to_string(),
+                   consumed: captures.name("consumed")
+                       .unwrap()
+                       .parse()?,
+                   voltage: captures.name("voltage")
+                       .unwrap()
+                       .parse()?,
+                   current: captures.name("current")
+                       .unwrap()
+                       .parse()?,
+               })
+        } else {
+            Err(Error::Heartbeat(format!("Unable to parse efoy: {}", s)))
+        }
+    }
+}
+
+impl FromStr for EfoyState {
+    type Err = Error;
+    fn from_str(s: &str) -> Result<EfoyState> {
+        match s {
+            "auto off" => Ok(EfoyState::AutoOff),
+            "auto on" => Ok(EfoyState::AutoOn),
+            "freeze protection" => Ok(EfoyState::FreezeProtection),
+            _ => Err(Error::Heartbeat(format!("Unknown efoy state: {}", s))),
+        }
+    }
+}
+
+impl From<EfoyState> for String {
+    fn from(efoy_state: EfoyState) -> String {
+        match efoy_state {
+            EfoyState::AutoOff => "auto off".to_string(),
+            EfoyState::AutoOn => "auto on".to_string(),
+            EfoyState::FreezeProtection => "freeze protection".to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{TimeZone, Utc};
 
     #[test]
     fn heartbeats() {
@@ -263,7 +354,23 @@ mod tests {
             .next()
             .unwrap()
             .unwrap();
+        assert_eq!(3, heartbeat.version);
+        assert_eq!(Utc.ymd(2017, 8, 1).and_hms(0, 0, 55), heartbeat.datetime);
         assert_eq!(94.208, heartbeat.soc1);
         assert_eq!(94.947, heartbeat.soc2);
+
+        let efoy1 = heartbeat.efoy1;
+        assert_eq!(EfoyState::AutoOff, efoy1.state);
+        assert_eq!("1.1", efoy1.cartridge);
+        assert_eq!(3.741, efoy1.consumed);
+        assert_eq!(26.63, efoy1.voltage);
+        assert_eq!(-0.03, efoy1.current);
+
+        let efoy2 = heartbeat.efoy2;
+        assert_eq!(EfoyState::AutoOff, efoy2.state);
+        assert_eq!("1.1", efoy2.cartridge);
+        assert_eq!(3.687, efoy2.consumed);
+        assert_eq!(26.64, efoy2.voltage);
+        assert_eq!(-0.02, efoy2.current);
     }
 }

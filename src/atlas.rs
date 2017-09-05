@@ -248,6 +248,7 @@ impl Heartbeat {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{TimeZone, Utc};
 
     #[test]
     fn heartbeats() {
@@ -263,6 +264,8 @@ mod tests {
             .next()
             .unwrap()
             .unwrap();
+        assert_eq!(3, heartbeat.version);
+        assert_eq!(Utc.ymd(2017, 8, 1).and_hms(0, 0, 55), heartbeat.datetime);
         assert_eq!(94.208, heartbeat.soc1);
         assert_eq!(94.947, heartbeat.soc2);
     }

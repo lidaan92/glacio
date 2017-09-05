@@ -9,9 +9,8 @@
 //!     - In Iridium Short Burst Data (SBD) messages in `/var/iridium`
 //!     - As images in `/home/iridiumcam/StarDot`
 //!
-//! This crate brings together these disparate data sources into a single Rust API, for access, and
-//! a HTTP API server (written in [iron](https://github.com/iron/iron)). This http API is available
-//! at http://api.glac.io.
+//! This crate brings together these disparate data sources into a single Rust API. This API is
+//! then used to drive a HTTP API server (written in [iron](https://github.com/iron/iron)), available at http://glacio.gadom.ski.
 //!
 //! See `glacio::Api` for the HTTP API documentation.
 

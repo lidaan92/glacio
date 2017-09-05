@@ -42,7 +42,7 @@ pub struct Detail {
     pub latest_image: ImageSummary,
 }
 
-/// A summary of infromation about an image.
+/// A summary of information about an image.
 #[derive(Serialize, Debug)]
 pub struct ImageSummary {
     /// The name of the camera that took this image.

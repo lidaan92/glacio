@@ -320,6 +320,14 @@ impl FromStr for EfoyState {
     }
 }
 
+impl From<EfoyState> for String {
+    fn from(efoy_state: EfoyState) -> String {
+        match efoy_state {
+            EfoyState::AutoOff => "auto off".to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

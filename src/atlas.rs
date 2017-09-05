@@ -110,6 +110,10 @@ pub struct Efoy {
 pub enum EfoyState {
     /// The efoy is in auto mode, and is off.
     AutoOff,
+    /// The efoy is in auto mode, and is on.
+    AutoOn,
+    /// The efoy is heating itself to avoid freezing.
+    FreezeProtection,
 }
 
 impl SbdSource {
@@ -314,6 +318,8 @@ impl FromStr for EfoyState {
     fn from_str(s: &str) -> Result<EfoyState> {
         match s {
             "auto off" => Ok(EfoyState::AutoOff),
+            "auto on" => Ok(EfoyState::AutoOn),
+            "freeze protection" => Ok(EfoyState::FreezeProtection),
             _ => Err(Error::Heartbeat(format!("Unknown efoy state: {}", s))),
         }
     }
@@ -323,6 +329,8 @@ impl From<EfoyState> for String {
     fn from(efoy_state: EfoyState) -> String {
         match efoy_state {
             EfoyState::AutoOff => "auto off".to_string(),
+            EfoyState::AutoOn => "auto on".to_string(),
+            EfoyState::FreezeProtection => "freeze protection".to_string(),
         }
     }
 }

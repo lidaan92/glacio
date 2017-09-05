@@ -1,5 +1,5 @@
 use {Error, Result};
-use atlas::{Efoy, Heartbeat, SbdSource};
+use atlas::{Efoy, Heartbeat, ReadSbd, SbdSource};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -98,17 +98,18 @@ impl Config {
            })
     }
 
-    fn heartbeats(&self) -> Result<Vec<Heartbeat>> {
-        let heartbeats: Vec<Heartbeat> = SbdSource::new(&self.path)
-            .imeis(&[&self.imei])
-            .versions(&self.versions)
-            .iter()?
+    pub fn heartbeats(&self) -> Result<Vec<Heartbeat>> {
+        let heartbeats: Vec<Heartbeat> = self.read_sbd()?
             .flat_map(|result| result.ok())
             .collect();
         if heartbeats.is_empty() {
             return Err(Error::ApiConfig("no heartbeats found".to_string()));
         }
         Ok(heartbeats)
+    }
+
+    pub fn read_sbd(&self) -> Result<ReadSbd> {
+        SbdSource::new(&self.path).imeis(&[&self.imei]).versions(&self.versions).iter()
     }
 }
 

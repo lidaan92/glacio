@@ -48,6 +48,14 @@ pub struct EfoyStatus {
     pub voltage: f32,
     /// The current level of this efoy.
     pub current: f32,
+    /// The fuel level in 1.1.
+    pub fuel_1_1: f32,
+    /// The fuel level in 1.2.
+    pub fuel_1_2: f32,
+    /// The fuel level in 2.1.
+    pub fuel_2_1: f32,
+    /// The fuel level in 2.2.
+    pub fuel_2_2: f32,
 }
 
 /// A record of the power status at a given time.
@@ -72,8 +80,14 @@ pub struct PowerHistory {
 impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
         let mut heartbeats = self.heartbeats()?;
-        heartbeats.sort_by(|a, b| b.cmp(a));
-        let latest = &heartbeats[0];
+        heartbeats.sort();
+        let mut efoy1 = Efoy::new();
+        let mut efoy2 = Efoy::new();
+        for heartbeat in &heartbeats {
+            efoy1.process(&heartbeat.efoy1)?;
+            efoy2.process(&heartbeat.efoy2)?;
+        }
+        let latest = heartbeats.into_iter().last().unwrap();
         Ok(Status {
                last_heartbeat_received: latest.datetime.to_rfc3339(),
                batteries: vec![BatteryStatus {
@@ -84,7 +98,8 @@ impl Config {
                                    id: 2,
                                    state_of_charge: latest.soc2,
                                }],
-               efoys: vec![EfoyStatus::new(1, &latest.efoy1), EfoyStatus::new(2, &latest.efoy2)],
+               efoys: vec![EfoyStatus::new(1, &latest.efoy1, &efoy1),
+                           EfoyStatus::new(2, &latest.efoy2, &efoy2)],
            })
     }
 
@@ -129,14 +144,18 @@ impl Config {
 }
 
 impl EfoyStatus {
-    fn new(id: u8, efoy: &EfoyHeartbeat) -> EfoyStatus {
+    fn new(id: u8, efoy_heartbeat: &EfoyHeartbeat, efoy: &Efoy) -> EfoyStatus {
         EfoyStatus {
             id: id,
-            state: efoy.state.into(),
-            cartridge: efoy.cartridge.clone(),
-            consumed: efoy.consumed,
-            voltage: efoy.voltage,
-            current: efoy.current,
+            state: efoy_heartbeat.state.into(),
+            cartridge: efoy_heartbeat.cartridge.clone(),
+            consumed: efoy_heartbeat.consumed,
+            voltage: efoy_heartbeat.voltage,
+            current: efoy_heartbeat.current,
+            fuel_1_1: efoy.fuel_percentage("1.1").unwrap(),
+            fuel_1_2: efoy.fuel_percentage("1.2").unwrap(),
+            fuel_2_1: efoy.fuel_percentage("2.1").unwrap(),
+            fuel_2_2: efoy.fuel_percentage("2.2").unwrap(),
         }
     }
 }

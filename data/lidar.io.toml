@@ -34,3 +34,23 @@ path = "/home/iridiumcam/StarDot/HEL_BERGCAM3/StarDot1"
 name = "HEL_BERGCAM3_2"
 description = "HEL_BERGCAM3 is a dual-camera system on the north side of the Helheim Glacier, installed in 2017. It is close to the location of the to-be-installed ATLAS2 system. HEL_BERGCAM3_2 is the rightward (westward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM3/StarDot2"
+
+[[cameras]]
+name = "HEL_BERGCAM1_1"
+description = "HEL_BERGCAM1 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM1_1 is the rightward (southward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_BERGCAM1/StarDot1"
+
+[[cameras]]
+name = "HEL_BERGCAM1_2"
+description = "HEL_BERGCAM1 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM1_2 is the leftward (northward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_BERGCAM1/StarDot2"
+
+[[cameras]]
+name = "HEL_BERGCAM2_1"
+description = "HEL_BERGCAM2 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM2_1 is the leftward (northward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_BERGCAM2/StarDot1"
+
+[[cameras]]
+name = "HEL_BERGCAM2_2"
+description = "HEL_BERGCAM1 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM1_2 is the rightward (southward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_BERGCAM2/StarDot2"

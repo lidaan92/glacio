@@ -24,3 +24,4 @@ url = "1.5"
 [[bin]]
 name = "glacio"
 doc = false
+test = false

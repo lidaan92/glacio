@@ -19,8 +19,8 @@ def push():
 def update():
     with cd(REMOTE_DIRECTORY):
         run("git pull")
-        run("cargo build --release")
-        run("cargo test")
+        run("cargo build --release --all")
+        run("cargo test --all")
 
 @task
 def restart():

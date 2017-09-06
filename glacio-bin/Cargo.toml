@@ -1,0 +1,13 @@
+[package]
+name = "glacio-bin"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+docopt = "*"
+env_logger = "*"
+glacio = { path = "../glacio" }
+glacio-http = { path = "../glacio-http" }
+iron = "*"
+serde = "*"
+serde_derive = "*"

@@ -144,13 +144,18 @@ impl FromStr for Packet {
                     Ok(Packet::SelfTimedExtended {
                            id: captures.name("id")
                                .unwrap()
+                               .as_str()
                                .parse()?,
                            start_byte: captures.name("start_byte")
                                .unwrap()
+                               .as_str()
                                .parse()?,
                            total_bytes: captures.name("total_bytes")
-                               .map_or(Ok(None), |s| s.parse().map(Some))?,
-                           data: captures.name("data").unwrap().to_string(),
+                               .map_or(Ok(None), |s| s.as_str().parse().map(Some))?,
+                           data: captures.name("data")
+                               .unwrap()
+                               .as_str()
+                               .to_string(),
                        })
                 } else {
                     Err(Error::InterleavedMessage(format!("Invalid self timed extended packet: {}",

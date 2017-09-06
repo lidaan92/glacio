@@ -1,0 +1,16 @@
+[package]
+name = "glacio-http"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+glacio = { path = "../glacio" }
+iron = "*"
+logger = "*"
+params = "*"
+persistent = "*"
+router = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+toml = "*"

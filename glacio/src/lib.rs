@@ -20,30 +20,16 @@
 
 extern crate chrono;
 #[macro_use]
-extern crate iron;
-#[macro_use]
 extern crate lazy_static;
-extern crate logger;
-extern crate params;
-extern crate persistent;
 extern crate regex;
-#[macro_use]
-extern crate router;
 extern crate sbd;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-extern crate toml;
 extern crate url;
 
-pub mod api;
 pub mod atlas;
 pub mod camera;
 
 mod sutron;
 
-pub use api::Api;
 pub use atlas::Heartbeat;
 pub use camera::{Camera, Image};
 
@@ -52,8 +38,6 @@ pub use camera::{Camera, Image};
 pub enum Error {
     /// Wrapper around `chrono::ParseError`.
     ChronoParse(chrono::ParseError),
-    /// The api configuration is bad.
-    ApiConfig(String),
     /// The ATLAS heartbeat was invalid.
     Heartbeat(String),
     /// Invalid image filename.
@@ -72,8 +56,6 @@ pub enum Error {
     Sbd(sbd::Error),
     /// Wrapper around `std::path::StripPrefixError`.
     StripPrefix(std::path::StripPrefixError),
-    /// Wrapper around `toml::de::Error`.
-    TomlDe(toml::de::Error),
     /// Wrapper around `url::ParseError`.
     UrlParse(url::ParseError),
 }
@@ -114,12 +96,6 @@ impl From<sbd::Error> for Error {
     }
 }
 
-impl From<toml::de::Error> for Error {
-    fn from(err: toml::de::Error) -> Error {
-        Error::TomlDe(err)
-    }
-}
-
 impl From<url::ParseError> for Error {
     fn from(err: url::ParseError) -> Error {
         Error::UrlParse(err)
@@ -129,7 +105,6 @@ impl From<url::ParseError> for Error {
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::ApiConfig(_) => "invalid api configuration",
             Error::ChronoParse(ref err) => err.description(),
             Error::Heartbeat(_) => "error parsing heartbeat",
             Error::ImageFilename(_) => "invalid image filename",
@@ -139,16 +114,18 @@ impl std::error::Error for Error {
             Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
-            Error::TomlDe(ref err) => err.description(),
             Error::UrlParse(ref err) => err.description(),
         }
+    }
+
+    fn cause(&self) -> Option<&std::error::Error> {
+        unimplemented!()
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
-            Error::ApiConfig(ref msg) => write!(f, "invalid api configuration: {}", msg),
             Error::ChronoParse(ref err) => err.fmt(f),
             Error::Heartbeat(ref msg) => write!(f, "error parsing heartbeat: {}", msg),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
@@ -158,7 +135,6 @@ impl std::fmt::Display for Error {
             Error::ParseInt(ref err) => err.fmt(f),
             Error::Sbd(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),
-            Error::TomlDe(ref err) => err.fmt(f),
             Error::UrlParse(ref err) => err.fmt(f),
         }
     }

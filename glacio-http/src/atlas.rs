@@ -1,5 +1,5 @@
 use {Error, Result};
-use atlas::{Efoy, Heartbeat, ReadSbd, SbdSource};
+use glacio::atlas::{Efoy, Heartbeat, ReadSbd, SbdSource};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -113,13 +113,18 @@ impl Config {
             .flat_map(|result| result.ok())
             .collect();
         if heartbeats.is_empty() {
-            return Err(Error::ApiConfig("no heartbeats found".to_string()));
+            return Err(Error::Config(format!("No heartbeats found under path {}",
+                                             self.path.display())));
         }
         Ok(heartbeats)
     }
 
     pub fn read_sbd(&self) -> Result<ReadSbd> {
-        SbdSource::new(&self.path).imeis(&[&self.imei]).versions(&self.versions).iter()
+        SbdSource::new(&self.path)
+            .imeis(&[&self.imei])
+            .versions(&self.versions)
+            .iter()
+            .map_err(Error::from)
     }
 }
 

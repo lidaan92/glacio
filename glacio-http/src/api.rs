@@ -1,48 +1,6 @@
-//! HTTP API for glacio data.
-//!
-//! # API methods
-//!
-//! All API calls return JSON. Collections of objects are returned as arrays, e.g.:
-//!
-//! ```json
-//! [{"name":"Thing 1"},{"name":"Thing 2"}]
-//! ```
-//!
-//! ## `/cameras`
-//!
-//! Returns a summary of all remote cameras, as defined by `glacio::api::CameraSummary`.
-//!
-//! ## `/cameras/<name>`
-//!
-//! Returns detailed information about the camera named `<name>`, as defined by
-//! `glacio::api::CameraDetail`.
-//!
-//! ## `/cameras/<name>/images`
-//!
-//! Returns a list of all images associated with this camera, as defined by
-//! `glacio::api::ImageSummary`.
-//!
-//! ## `/atlas/status`
-//!
-//! Returns the status of the ATLAS system, as defined by `glacio::api::AtlasStatus`.
-//!
-//! ## `/atlas/power/history`
-//!
-//! Returns the power history of the ATLAS system, as defined by an array of
-//! `glacio::api::AtlasPowerHistory`.
-
-mod atlas;
-mod camera;
-mod config;
-mod handlers;
-mod pagination;
-
-pub use self::atlas::{PowerHistory as AtlasPowerHistory, Status as AtlasStatus};
-pub use self::camera::{Detail as CameraDetail, ImageSummary, Summary as CameraSummary};
-pub use self::config::Config;
-use self::config::PersistentConfig;
-use self::pagination::Paginate;
 use Result;
+use config::{Config, PersistentConfig};
+use handlers;
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::headers::AccessControlAllowOrigin;
 use logger::Logger;
@@ -62,8 +20,8 @@ impl Api {
     /// # Examples
     ///
     /// ```
-    /// # use glacio::Api;
-    /// let api = Api::from_path("data/rdcrlpjg.toml").unwrap();
+    /// # use glacio_http::Api;
+    /// let api = Api::from_path("../data/rdcrlpjg.toml").unwrap();
     /// ```
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Api> {
         Config::from_path(path).and_then(|config| Api::new(config))

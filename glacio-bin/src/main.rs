@@ -1,13 +1,12 @@
 extern crate docopt;
-extern crate glacio;
 extern crate env_logger;
+extern crate glacio_http;
 extern crate iron;
 #[macro_use]
 extern crate serde_derive;
 
 use docopt::Docopt;
-use glacio::Api;
-use glacio::api::Config;
+use glacio_http::{Api, Config};
 use iron::Iron;
 
 const USAGE: &'static str = "

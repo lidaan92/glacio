@@ -261,19 +261,24 @@ impl Heartbeat {
             Ok(Heartbeat {
                    version: captures.name("version")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                    datetime: datetime,
                    soc1: captures.name("soc1")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                    soc2: captures.name("soc2")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                    efoy1: captures.name("efoy1")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                    efoy2: captures.name("efoy2")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                })
         } else {
@@ -295,16 +300,23 @@ impl FromStr for Efoy {
             Ok(Efoy {
                    state: captures.name("state")
                        .unwrap()
+                       .as_str()
                        .parse()?,
-                   cartridge: captures.name("cartridge").unwrap().to_string(),
+                   cartridge: captures.name("cartridge")
+                       .unwrap()
+                       .as_str()
+                       .to_string(),
                    consumed: captures.name("consumed")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                    voltage: captures.name("voltage")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                    current: captures.name("current")
                        .unwrap()
+                       .as_str()
                        .parse()?,
                })
         } else {

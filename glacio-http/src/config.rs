@@ -1,7 +1,5 @@
-use {Error, Result};
-use api::atlas::Config as AtlasConfig;
-use api::camera::Config as CameraConfig;
-use camera::Server as CameraServer;
+use {Error, Result, atlas, camera};
+use glacio::camera::Server;
 use iron::typemap::Key;
 use std::collections::HashMap;
 use std::fs::File;
@@ -13,9 +11,9 @@ use toml;
 #[derive(Deserialize, Debug)]
 pub struct Config {
     /// The configuration for the ATLAS system.
-    pub atlas: AtlasConfig,
+    pub atlas: atlas::Config,
     image_document_root: String,
-    cameras: Vec<CameraConfig>,
+    cameras: Vec<camera::Config>,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -30,7 +28,7 @@ impl Config {
     }
 
     /// Returns a hash map of all configured cameras, keyed by their names.
-    pub fn cameras(&self) -> HashMap<String, CameraConfig> {
+    pub fn cameras(&self) -> HashMap<String, camera::Config> {
         self.cameras
             .iter()
             .map(|config| (config.name.clone(), config.clone()))
@@ -38,8 +36,8 @@ impl Config {
     }
 
     /// Returns the configured image server for iridiumcam images.
-    pub fn image_server(&self) -> Result<CameraServer> {
-        CameraServer::new(&self.image_document_root)
+    pub fn image_server(&self) -> Result<Server> {
+        Server::new(&self.image_document_root).map_err(Error::from)
     }
 }
 

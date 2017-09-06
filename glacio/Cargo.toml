@@ -1,0 +1,12 @@
+[package]
+name = "glacio"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+chrono = "*"
+lazy_static = "*"
+logger = "*"
+regex = "*"
+sbd = "*"
+url = "*"

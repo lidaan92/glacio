@@ -1,7 +1,7 @@
-use {Camera, Error, Image, Result};
-use api::Paginate;
-use camera::Server;
+use {Error, Result};
+use glacio::camera::{Camera, Image, Server};
 use iron::Request;
+use pagination::Paginate;
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct Config {
@@ -70,7 +70,7 @@ impl Config {
         let images = self.images(request, server)?;
         let image = images.into_iter()
             .next()
-            .ok_or(Error::ApiConfig(format!("No images for {}", self.name)))?;
+            .ok_or(Error::Config(format!("No images for {}", self.name)))?;
         Ok(Detail {
                name: summary.name,
                description: summary.description,
@@ -81,9 +81,12 @@ impl Config {
     }
 
     pub fn images(&self, request: &mut Request, server: &Server) -> Result<Vec<ImageSummary>> {
-        let mut images = self.camera()
-            .and_then(|camera| camera.images())
-            .and_then(|images| images.collect::<Result<Vec<_>>>())?;
+        let mut images =
+            self.camera()
+                .and_then(|camera| camera.images().map_err(Error::from))
+                .and_then(|images| {
+                              images.map(|r| r.map_err(Error::from)).collect::<Result<Vec<_>>>()
+                          })?;
         images.sort_by(|a, b| b.cmp(a));
         images.into_iter()
             .paginate(request)?
@@ -92,7 +95,7 @@ impl Config {
     }
 
     fn camera(&self) -> Result<Camera> {
-        Camera::new(&self.path)
+        Camera::new(&self.path).map_err(Error::from)
     }
 
     fn image_summary(&self, _: &Request, server: &Server, image: &Image) -> Result<ImageSummary> {

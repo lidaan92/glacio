@@ -1,4 +1,4 @@
-use api::PersistentConfig;
+use config::PersistentConfig;
 use iron::{IronResult, Plugin, Request, Response, status};
 use iron::headers::ContentType;
 use persistent::Read;

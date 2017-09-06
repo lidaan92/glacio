@@ -52,5 +52,5 @@ path = "/home/iridiumcam/StarDot/HEL_BERGCAM2/StarDot1"
 
 [[cameras]]
 name = "HEL_BERGCAM2_2"
-description = "HEL_BERGCAM1 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM1_2 is the rightward (southward) looking camera of the pair."
+description = "HEL_BERGCAM2 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM2_2 is the rightward (southward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM2/StarDot2"

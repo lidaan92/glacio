@@ -14,3 +14,23 @@ path = "/home/iridiumcam/StarDot/ATLAS_CAM"
 name = "ATLAS_CAM2"
 description = "ATLAS_CAM2 is a single remote camera, mounted on a tripod next to the ATLAS system at close range; it was installed in the summer of 2016. ATLAS_CAM2 is timed to take pictures while the scanner is working, as indicated by the red lights on the housing."
 path = "/home/iridiumcam/StarDot/ATLAS_CAM2"
+
+[[cameras]]
+name = "HEL_DUAL_1"
+description = "HEL_DUAL is a dual-camera system on the south side of the Helheim Glacier. It was installed in 2016, replacing HEL_TERMINUS. HEL_DUAL_1 is the rightward (eastward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_DUAL/StarDot1"
+
+[[cameras]]
+name = "HEL_DUAL_2"
+description = "HEL_DUAL is a dual-camera system on the south side of the Helheim Glacier. It was installed in 2016, replacing HEL_TERMINUS. HEL_DUAL_2 is the leftward (westward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_DUAL/StarDot2"
+
+[[cameras]]
+name = "HEL_BERGCAM3_1"
+description = "HEL_BERGCAM3 is a dual-camera system on the north side of the Helheim Glacier, installed in 2017. It is close to the location of the to-be-installed ATLAS2 system. HEL_BERGCAM3_1 is the leftward (eastward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_BERGCAM3/StarDot1"
+
+[[cameras]]
+name = "HEL_BERGCAM3_2"
+description = "HEL_BERGCAM3 is a dual-camera system on the north side of the Helheim Glacier, installed in 2017. It is close to the location of the to-be-installed ATLAS2 system. HEL_BERGCAM3_2 is the rightward (westward) looking camera of the pair."
+path = "/home/iridiumcam/StarDot/HEL_BERGCAM3/StarDot2"

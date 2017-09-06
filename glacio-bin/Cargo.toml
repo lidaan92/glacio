@@ -4,10 +4,10 @@ version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
 
 [dependencies]
-docopt = "*"
-env_logger = "*"
+docopt = "0.8"
+env_logger = "0.4"
 glacio = { path = "../glacio" }
 glacio-http = { path = "../glacio-http" }
-iron = "*"
-serde = "*"
-serde_derive = "*"
+iron = "0.5"
+serde = "1.0"
+serde_derive = "1.0"

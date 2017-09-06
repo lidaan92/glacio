@@ -4,9 +4,8 @@ version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
 
 [dependencies]
-chrono = "*"
-lazy_static = "*"
-logger = "*"
-regex = "*"
-sbd = "*"
-url = "*"
+chrono = "0.4"
+lazy_static = "0.2"
+regex = "0.2"
+sbd = "0.1"
+url = "1.5"

@@ -1,4 +1,4 @@
-//! Heartbeat messages from the ATLAS system.
+//! Remote LiDAR system located at the Helheim Glacier in Greenland.
 //!
 //! The ATLAS system, a remote LiDAR scanner at the Helheim Glacier in southeast Greenland, sends
 //! back hourly heartbeat messages to keep us informed of its status. These heartbeats include
@@ -50,7 +50,7 @@ use std::str::FromStr;
 use std::vec::IntoIter;
 use sutron;
 
-/// ATLAS heartbeats from SBD messages.
+/// Structure for retrieving ATLAS heartbeats from SBD messages.
 ///
 /// Configure the source to fetch heartbeats of one or more versions from a filesystem sbd storage.
 #[derive(Debug)]
@@ -60,7 +60,7 @@ pub struct SbdSource {
     versions: Vec<u8>,
 }
 
-/// An iterator over heartbeats in an sbd storage.
+/// An iterator over heartbeats provided by an `SbdSource`.
 ///
 /// The iterator type is a `Result<Heartbeat>`, because we can fail in the middle of a stream of
 /// heartbeats.
@@ -70,7 +70,7 @@ pub struct ReadSbd {
     versions: Vec<u8>,
 }
 
-/// A heartbeat from the ATLAS system.
+/// Status report from the entire ATLAS system.
 ///
 /// These heartbeats are transmitted via Iridium SBD. Because of the SBD message length
 /// restriction, heartbeats may come in one or more messages, and might have to be pieced together.
@@ -85,17 +85,19 @@ pub struct Heartbeat {
     /// The state of charge of the second battery.
     pub soc2: f32,
     /// Information about efoy system 1.
-    pub efoy1: Efoy,
+    pub efoy1: EfoyHeartbeat,
     /// Information about efoy system 2.
-    pub efoy2: Efoy,
+    pub efoy2: EfoyHeartbeat,
 }
 
-/// Heartbeat information about an efoy system.
+/// Instantaneous status report from one of our EFOY fuel cell systems.
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
-pub struct Efoy {
+pub struct EfoyHeartbeat {
     /// The state of the efoy system at time of heartbeat.
     pub state: EfoyState,
     /// The active cartridge.
+    ///
+    /// The ATLAS EFOYs have four cartridges, named "1.1", "1.2", "2.1", and "2.2".
     pub cartridge: String,
     /// The fuel consumed so far by the active cartridge.
     pub consumed: f32,
@@ -105,7 +107,7 @@ pub struct Efoy {
     pub current: f32,
 }
 
-/// The state of the efoy system.
+/// The operating state/mode of an EFOY fuel cell system.
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum EfoyState {
     /// The efoy is in auto mode, and is off.
@@ -287,9 +289,9 @@ impl Heartbeat {
     }
 }
 
-impl FromStr for Efoy {
+impl FromStr for EfoyHeartbeat {
     type Err = Error;
-    fn from_str(s: &str) -> Result<Efoy> {
+    fn from_str(s: &str) -> Result<EfoyHeartbeat> {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"(?x)^(?P<state>.*),
                                                     cartridge\s(?P<cartridge>.*)\sconsumed\s(?P<consumed>\d+\.\d+)l,
@@ -297,7 +299,7 @@ impl FromStr for Efoy {
                                                     (?P<current>.*)$").unwrap();
         }
         if let Some(captures) = RE.captures(s) {
-            Ok(Efoy {
+            Ok(EfoyHeartbeat {
                    state: captures.name("state")
                        .unwrap()
                        .as_str()
@@ -325,7 +327,7 @@ impl FromStr for Efoy {
     }
 }
 
-impl Efoy {
+impl EfoyHeartbeat {
     /// Returns true if this efoy is on.
     pub fn is_on(&self) -> bool {
         match self.state {

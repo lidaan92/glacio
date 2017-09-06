@@ -9,10 +9,7 @@
 //!     - In Iridium Short Burst Data (SBD) messages in `/var/iridium`
 //!     - As images in `/home/iridiumcam/StarDot`
 //!
-//! This crate brings together these disparate data sources into a single Rust API. This API is
-//! then used to drive a HTTP API server (written in [iron](https://github.com/iron/iron)), available at http://glacio.gadom.ski.
-//!
-//! See `glacio::Api` for the HTTP API documentation.
+//! This crate brings together these disparate data sources into a single Rust API.
 
 #![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
         trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
@@ -30,7 +27,6 @@ pub mod camera;
 
 mod sutron;
 
-pub use atlas::Heartbeat;
 pub use camera::{Camera, Image};
 
 /// Our custom error enum.
@@ -38,9 +34,9 @@ pub use camera::{Camera, Image};
 pub enum Error {
     /// Wrapper around `chrono::ParseError`.
     ChronoParse(chrono::ParseError),
-    /// The ATLAS heartbeat was invalid.
+    /// The message was unable to be converted into a ATLAS heartbeat.
     Heartbeat(String),
-    /// Invalid image filename.
+    /// The image filename was not in the proper format.
     ImageFilename(String),
     /// Problem reconstructing a Sutron interleaved message.
     ///
@@ -119,7 +115,16 @@ impl std::error::Error for Error {
     }
 
     fn cause(&self) -> Option<&std::error::Error> {
-        unimplemented!()
+        match *self {
+            Error::ChronoParse(ref err) => Some(err),
+            Error::Io(ref err) => Some(err),
+            Error::ParseFloat(ref err) => Some(err),
+            Error::ParseInt(ref err) => Some(err),
+            Error::Sbd(ref err) => Some(err),
+            Error::StripPrefix(ref err) => Some(err),
+            Error::UrlParse(ref err) => Some(err),
+            _ => None,
+        }
     }
 }
 

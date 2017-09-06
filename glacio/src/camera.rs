@@ -1,4 +1,4 @@
-//! Remote cameras.
+//! Remote cameras located all over the world.
 //!
 //! These cameras are installed in remote locations, e.g. Greenland or Alaska. They take pictures
 //! at regular intervals, then send those pictures back to a home server via a satellite
@@ -51,9 +51,7 @@ pub struct Image {
     path: PathBuf,
 }
 
-/// An image server.
-///
-/// A server translates a local path to a url that can be used to fetch the image.
+/// An image server, used to translate a local image path to a url.
 #[derive(Debug)]
 pub struct Server {
     base_url: Url,

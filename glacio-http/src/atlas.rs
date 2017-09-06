@@ -1,5 +1,5 @@
 use {Error, Result};
-use glacio::atlas::{Efoy, Heartbeat, ReadSbd, SbdSource};
+use glacio::atlas::{EfoyHeartbeat, Heartbeat, ReadSbd, SbdSource};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -129,7 +129,7 @@ impl Config {
 }
 
 impl EfoyStatus {
-    fn new(id: u8, efoy: &Efoy) -> EfoyStatus {
+    fn new(id: u8, efoy: &EfoyHeartbeat) -> EfoyStatus {
         EfoyStatus {
             id: id,
             state: efoy.state.into(),

@@ -45,10 +45,14 @@ use regex::Regex;
 use sbd::mo::Message;
 use sbd::storage::FilesystemStorage;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::vec::IntoIter;
 use sutron;
+
+const EFOY_TANK_NAMES: [&'static str; 4] = ["1.1", "1.2", "2.1", "2.2"];
+const EFOY_INITIAL_FUEL_LEVEL: f32 = 8.0;
 
 /// Structure for retrieving ATLAS heartbeats from SBD messages.
 ///
@@ -91,7 +95,7 @@ pub struct Heartbeat {
 }
 
 /// Instantaneous status report from one of our EFOY fuel cell systems.
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Default, PartialEq, PartialOrd)]
 pub struct EfoyHeartbeat {
     /// The state of the efoy system at time of heartbeat.
     pub state: EfoyState,
@@ -116,6 +120,15 @@ pub enum EfoyState {
     AutoOn,
     /// The efoy is heating itself to avoid freezing.
     FreezeProtection,
+}
+
+/// Stateful representation of an EFOY system.
+///
+/// Used to calculate the fuel status of an EFOY through time from a series of `EfoyHeartbeat`s.
+#[derive(Clone, Debug)]
+pub struct Efoy {
+    cartridges: BTreeMap<String, f32>,
+    latest_cartridge: String,
 }
 
 impl SbdSource {
@@ -337,6 +350,12 @@ impl EfoyHeartbeat {
     }
 }
 
+impl Default for EfoyState {
+    fn default() -> EfoyState {
+        EfoyState::AutoOff
+    }
+}
+
 impl FromStr for EfoyState {
     type Err = Error;
     fn from_str(s: &str) -> Result<EfoyState> {
@@ -359,10 +378,134 @@ impl From<EfoyState> for String {
     }
 }
 
+impl Efoy {
+    /// Creates a new efoy with full fuel cartridges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::atlas::Efoy;
+    /// let efoy = Efoy::new();
+    /// ```
+    pub fn new() -> Efoy {
+        Default::default()
+    }
+
+    /// Returns the fuel level for the named cartridge.
+    ///
+    /// Returns none if there is no cartridge with the provided name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::atlas::Efoy;
+    /// let efoy = Efoy::new();
+    /// assert_eq!(Some(8.0), efoy.fuel("1.1"));
+    /// assert_eq!(None, efoy.fuel("not a cartridge"));
+    /// ```
+    pub fn fuel(&self, name: &str) -> Option<f32> {
+        self.cartridges.get(name).map(|&n| n)
+    }
+
+    /// Returns the fuel in a cartridge as a percentage of full.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::atlas::Efoy;
+    /// let efoy = Efoy::new();
+    /// assert_eq!(Some(1.0), efoy.fuel_percentage("1.1"));
+    /// ```
+    pub fn fuel_percentage(&self, name: &str) -> Option<f32> {
+        self.fuel(name).map(|n| n / EFOY_INITIAL_FUEL_LEVEL)
+    }
+
+    /// Returns the total fuel this EFOY retains.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::atlas::Efoy;
+    /// let efoy = Efoy::new();
+    /// assert_eq!(32.0, efoy.total_fuel());
+    /// ```
+    pub fn total_fuel(&self) -> f32 {
+        self.cartridges.values().fold(0.0, |n, acc| acc + n)
+    }
+
+    /// Returns the total fuel as a percentage of full.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::atlas::Efoy;
+    /// let efoy = Efoy::new();
+    /// assert_eq!(1.0, efoy.total_fuel_percentage());
+    /// ```
+    pub fn total_fuel_percentage(&self) -> f32 {
+        self.total_fuel() / (EFOY_INITIAL_FUEL_LEVEL * EFOY_TANK_NAMES.len() as f32)
+    }
+
+    /// Process an efoy heartbeat.
+    ///
+    /// The named cartridge is set to the starting fuel level minus the consumed fuel. All
+    /// "earlier" cartridges are set to zero. "1.1" is earlier than "1.2", which is earlier than "2.1",
+    /// which is earlier than "2.2".
+    ///
+    /// If a "later" cartridge has already been processed, returns an error.
+    ///
+    /// ```
+    /// # use glacio::atlas::{Efoy, EfoyHeartbeat};
+    /// let heartbeat = EfoyHeartbeat {
+    ///     cartridge: "1.1".to_string(),
+    ///     consumed: 4.2,
+    ///     ..Default::default()
+    /// };
+    /// let mut efoy = Efoy::new();
+    /// efoy.process(&heartbeat).unwrap();
+    /// ```
+    pub fn process(&mut self, heartbeat: &EfoyHeartbeat) -> Result<()> {
+        if self.cartridges.contains_key(&heartbeat.cartridge) {
+            if heartbeat.cartridge < self.latest_cartridge {
+                return Err(Error::Heartbeat(format!("EFOY has already switched to cartridge {}, cannot process heartbeat with cartridge {}",
+                                                    self.latest_cartridge,
+                                                    heartbeat.cartridge)));
+            } else if heartbeat.cartridge != self.latest_cartridge {
+                self.latest_cartridge = heartbeat.cartridge.to_string();
+            }
+            for (name, value) in &mut self.cartridges {
+                if name == &heartbeat.cartridge {
+                    *value = EFOY_INITIAL_FUEL_LEVEL - heartbeat.consumed;
+                    return Ok(());
+                } else {
+                    *value = 0.;
+                }
+            }
+            unreachable!()
+        } else {
+            Err(Error::Heartbeat(format!("Invalid EFOY cartridge name: {}", heartbeat.cartridge)))
+        }
+    }
+}
+
+impl Default for Efoy {
+    fn default() -> Efoy {
+        let mut cartridges = BTreeMap::new();
+        for name in &EFOY_TANK_NAMES {
+            cartridges.insert(name.to_string(), EFOY_INITIAL_FUEL_LEVEL);
+        }
+        Efoy {
+            cartridges: cartridges,
+            latest_cartridge: EFOY_TANK_NAMES[0].to_string(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono::{TimeZone, Utc};
+    use std::f32;
 
     #[test]
     fn heartbeats() {
@@ -396,5 +539,48 @@ mod tests {
         assert_eq!(3.687, efoy2.consumed);
         assert_eq!(26.64, efoy2.voltage);
         assert_eq!(-0.02, efoy2.current);
+    }
+
+    #[test]
+    fn efoy_init() {
+        let efoy = Efoy::new();
+        assert_eq!(8.0, efoy.fuel("1.1").unwrap());
+        assert_eq!(8.0, efoy.fuel("1.2").unwrap());
+        assert_eq!(8.0, efoy.fuel("2.1").unwrap());
+        assert_eq!(8.0, efoy.fuel("2.2").unwrap());
+        assert_eq!(32.0, efoy.total_fuel());
+        assert!(efoy.fuel("2.3").is_none());
+    }
+
+    #[test]
+    fn efoy_process_1_1() {
+        let mut efoy = Efoy::new();
+        let heartbeat = EfoyHeartbeat {
+            cartridge: "1.1".to_string(),
+            consumed: 4.2,
+            ..Default::default()
+        };
+        efoy.process(&heartbeat).unwrap();
+        assert!((3.8 - efoy.fuel("1.1").unwrap()) < f32::EPSILON);
+        assert!((27.8 - efoy.total_fuel()) < f32::EPSILON);
+    }
+
+    #[test]
+    fn efoy_process_2_2() {
+        let mut efoy = Efoy::new();
+        let mut heartbeat = EfoyHeartbeat {
+            cartridge: "2.2".to_string(),
+            consumed: 4.2,
+            ..Default::default()
+        };
+        efoy.process(&heartbeat).unwrap();
+        assert_eq!(0.0, efoy.fuel("1.1").unwrap());
+        assert_eq!(0.0, efoy.fuel("1.2").unwrap());
+        assert_eq!(0.0, efoy.fuel("2.1").unwrap());
+        assert!((3.8 - efoy.fuel("2.2").unwrap()) < f32::EPSILON);
+        assert!((3.8 - efoy.total_fuel()) < f32::EPSILON);
+
+        heartbeat.cartridge = "2.1".to_string();
+        assert!(efoy.process(&heartbeat).is_err());
     }
 }

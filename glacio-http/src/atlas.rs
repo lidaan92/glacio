@@ -1,5 +1,5 @@
 use {Error, Result};
-use glacio::atlas::{EfoyHeartbeat, Heartbeat, ReadSbd, SbdSource};
+use glacio::atlas::{Efoy, EfoyHeartbeat, Heartbeat, ReadSbd, SbdSource};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -51,7 +51,7 @@ pub struct EfoyStatus {
 }
 
 /// A record of the power status at a given time.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct PowerHistory {
     /// The date and time of the records.
     pub datetime: Vec<String>,
@@ -61,8 +61,12 @@ pub struct PowerHistory {
     pub state_of_charge_2: Vec<f32>,
     /// The output current of efoy 1.
     pub efoy_1_current: Vec<f32>,
+    /// The fuel level in EFOY 1, as a percentage.
+    pub efoy_1_fuel: Vec<f32>,
     /// The output current of efoy 2.
     pub efoy_2_current: Vec<f32>,
+    /// The fuel level in EFOY 1, as a percentage.
+    pub efoy_2_fuel: Vec<f32>,
 }
 
 impl Config {
@@ -87,25 +91,21 @@ impl Config {
     pub fn power_history(&self, _: &Request) -> Result<PowerHistory> {
         let mut heartbeats = self.heartbeats()?;
         heartbeats.sort();
-        let mut datetime = Vec::new();
-        let mut state_of_charge_1 = Vec::new();
-        let mut state_of_charge_2 = Vec::new();
-        let mut efoy_1_current = Vec::new();
-        let mut efoy_2_current = Vec::new();
+        let mut power_history: PowerHistory = Default::default();
+        let mut efoy1 = Efoy::new();
+        let mut efoy2 = Efoy::new();
         for heartbeat in heartbeats {
-            datetime.push(heartbeat.datetime.to_rfc3339());
-            state_of_charge_1.push(heartbeat.soc1);
-            state_of_charge_2.push(heartbeat.soc1);
-            efoy_1_current.push(heartbeat.efoy1.current);
-            efoy_2_current.push(heartbeat.efoy2.current);
+            efoy1.process(&heartbeat.efoy1)?;
+            efoy2.process(&heartbeat.efoy2)?;
+            power_history.datetime.push(heartbeat.datetime.to_rfc3339());
+            power_history.state_of_charge_1.push(heartbeat.soc1);
+            power_history.state_of_charge_2.push(heartbeat.soc1);
+            power_history.efoy_1_current.push(heartbeat.efoy1.current);
+            power_history.efoy_1_fuel.push(efoy1.total_fuel_percentage());
+            power_history.efoy_2_current.push(heartbeat.efoy2.current);
+            power_history.efoy_2_fuel.push(efoy2.total_fuel_percentage());
         }
-        Ok(PowerHistory {
-               datetime: datetime,
-               state_of_charge_1: state_of_charge_1,
-               state_of_charge_2: state_of_charge_2,
-               efoy_1_current: efoy_1_current,
-               efoy_2_current: efoy_2_current,
-           })
+        Ok(power_history)
     }
 
     pub fn heartbeats(&self) -> Result<Vec<Heartbeat>> {

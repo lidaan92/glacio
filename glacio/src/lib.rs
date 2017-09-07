@@ -9,7 +9,8 @@
 //!     - In Iridium Short Burst Data (SBD) messages in `/var/iridium`
 //!     - As images in `/home/iridiumcam/StarDot`
 //!
-//! This crate brings together these disparate data sources into a single Rust API.
+//! This crate brings together these disparate data sources into a single Rust API. For now, we
+//! don't have any of the weather station data, only cameras and ATLAS status information.
 
 #![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
         trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
@@ -34,6 +35,8 @@ pub use camera::{Camera, Image};
 pub enum Error {
     /// Wrapper around `chrono::ParseError`.
     ChronoParse(chrono::ParseError),
+    /// An EFOY already has a cartridge of that name.
+    DuplicateEfoyCartridge(String),
     /// The message was unable to be converted into a ATLAS heartbeat.
     Heartbeat(String),
     /// The image filename was not in the proper format.
@@ -102,6 +105,7 @@ impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::ChronoParse(ref err) => err.description(),
+            Error::DuplicateEfoyCartridge(_) => "duplicate efoy cartridge",
             Error::Heartbeat(_) => "error parsing heartbeat",
             Error::ImageFilename(_) => "invalid image filename",
             Error::InterleavedMessage(_) => "problem reconstructing an interleaved message",
@@ -132,6 +136,9 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Error::ChronoParse(ref err) => err.fmt(f),
+            Error::DuplicateEfoyCartridge(ref name) => {
+                write!(f, "duplicate efoy cartridge: {}", name)
+            }
             Error::Heartbeat(ref msg) => write!(f, "error parsing heartbeat: {}", msg),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
             Error::InterleavedMessage(ref msg) => write!(f, "interleaved message error: {}", msg),

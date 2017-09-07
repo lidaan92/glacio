@@ -176,6 +176,7 @@ mod tests {
     const SELF_TIMED: &'static str = "0ATHB03313";
     const SELF_TIMED_EXTENDED_0: &'static str = include_str!("../data/170801_000055.txt");
     const SELF_TIMED_EXTENDED_1: &'static str = include_str!("../data/170801_000155.txt");
+    const FORCED_TRANSMISSION: &'static str = include_str!("../data/160719_193136.txt");
 
     #[test]
     fn message_add_self_timed() {
@@ -194,5 +195,13 @@ mod tests {
         assert!(message.is_complete());
         assert_eq!(354, String::from(message.clone()).len());
         assert!(message.push(SELF_TIMED_EXTENDED_1).is_err());
+    }
+
+    #[test]
+    fn forced_transmission() {
+        match FORCED_TRANSMISSION.parse::<Packet>().unwrap() {
+            Packet::ForcedTransmission(msg) => assert_eq!("test", msg),
+            _ => panic!("Forced transmission was not recognized as such"),
+        }
     }
 }

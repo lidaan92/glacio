@@ -1,5 +1,5 @@
 use {Error, Result};
-use glacio::atlas::{Efoy, EfoyHeartbeat, Heartbeat, ReadSbd, SbdSource};
+use glacio::atlas::{Heartbeat, ReadSbd, SbdSource, efoy};
 use iron::Request;
 use std::path::PathBuf;
 
@@ -81,8 +81,8 @@ impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
         let mut heartbeats = self.heartbeats()?;
         heartbeats.sort();
-        let mut efoy1 = Efoy::new();
-        let mut efoy2 = Efoy::new();
+        let mut efoy1 = efoy::Efoy::new();
+        let mut efoy2 = efoy::Efoy::new();
         for heartbeat in &heartbeats {
             efoy1.process(&heartbeat.efoy1)?;
             efoy2.process(&heartbeat.efoy2)?;
@@ -107,8 +107,8 @@ impl Config {
         let mut heartbeats = self.heartbeats()?;
         heartbeats.sort();
         let mut power_history: PowerHistory = Default::default();
-        let mut efoy1 = Efoy::new();
-        let mut efoy2 = Efoy::new();
+        let mut efoy1 = efoy::Efoy::new();
+        let mut efoy2 = efoy::Efoy::new();
         for heartbeat in heartbeats {
             efoy1.process(&heartbeat.efoy1)?;
             efoy2.process(&heartbeat.efoy2)?;
@@ -144,7 +144,7 @@ impl Config {
 }
 
 impl EfoyStatus {
-    fn new(id: u8, efoy_heartbeat: &EfoyHeartbeat, efoy: &Efoy) -> EfoyStatus {
+    fn new(id: u8, efoy_heartbeat: &efoy::Heartbeat, efoy: &efoy::Efoy) -> EfoyStatus {
         EfoyStatus {
             id: id,
             state: efoy_heartbeat.state.into(),

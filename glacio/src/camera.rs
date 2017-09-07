@@ -31,8 +31,7 @@ pub struct Camera {
 /// # use glacio::Camera;
 /// let camera = Camera::new("data/ATLAS_CAM").unwrap();
 /// for result in camera.images().unwrap() {
-///     let image = result.unwrap();
-///     println!("{:?}", image.path());
+///     println!("{}", result.unwrap().path().display());
 /// }
 /// ```
 #[derive(Debug)]
@@ -41,10 +40,9 @@ pub struct Images {
     extensions: Vec<OsString>,
 }
 
-/// A remote camera image.
+/// An image taken by a remote camera and stored on the local filesystem.
 ///
-/// These exist on local filesystems and are served via remote servers (e.g.
-/// http://iridiumcam.lidar.io).
+/// Date and time information are assumed to be stored in the image's filename.
 #[derive(Debug, PartialEq, Eq, PartialOrd)]
 pub struct Image {
     datetime: DateTime<Utc>,
@@ -59,9 +57,10 @@ pub struct Server {
 }
 
 impl Camera {
-    /// Creates a new camera with a local image path.
+    /// Creates a new camera whose images are located under the provided path.
     ///
-    /// The local image path is canonicalized.
+    /// The local image path is canonicalized. The path is *not* searched recursively — all images
+    /// must be located directly under the path.
     ///
     /// # Examples
     ///
@@ -134,9 +133,7 @@ impl Iterator for Images {
 }
 
 impl Image {
-    /// Creates a new image from a path.
-    ///
-    /// The path is canonicalized.
+    /// Creates a new image from the path, which is canonicalized.
     ///
     /// # Examples
     ///
@@ -144,8 +141,10 @@ impl Image {
     /// use std::path::Path;
     /// # use glacio::Image;
     /// let image = Image::new("data/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg").unwrap();
-    /// assert_eq!(Path::new("data/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg").canonicalize().unwrap(),
-    ///            image.path());
+    /// assert_eq!(
+    ///     Path::new("data/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg").canonicalize().unwrap(),
+    ///     image.path()
+    /// );
     /// ```
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Image> {
         let path = path.as_ref().canonicalize()?;
@@ -171,6 +170,8 @@ impl Image {
     /// # use glacio::Image;
     /// let image = Image::new("data/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg").unwrap();
     /// let path = image.path();
+    /// assert!(path.is_absolute());
+    /// assert_eq!("ATLAS_CAM_20170806_152500.jpg", path.file_name().unwrap());
     /// ```
     pub fn path(&self) -> &Path {
         &self.path
@@ -181,9 +182,15 @@ impl Image {
     /// # Examples
     ///
     /// ```
+    /// # extern crate chrono;
+    /// # extern crate glacio;
     /// # use glacio::Image;
+    /// # use chrono::{Utc, TimeZone};
+    /// # fn main() {
     /// let image = Image::new("data/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg").unwrap();
     /// let datetime = image.datetime();
+    /// assert_eq!(Utc.ymd(2017, 8, 6).and_hms(15, 25, 0), datetime);
+    /// # }
     /// ```
     pub fn datetime(&self) -> DateTime<Utc> {
         self.datetime
@@ -241,6 +248,8 @@ impl Server {
     /// # use glacio::camera::Server;
     /// let server = Server::new("data").unwrap();
     /// let document_root = server.document_root();
+    /// assert!(document_root.is_absolute());
+    /// assert_eq!("data", document_root.file_name().unwrap());
     /// ```
     pub fn document_root(&self) -> &Path {
         &self.document_root

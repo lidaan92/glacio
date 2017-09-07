@@ -81,8 +81,8 @@ impl Config {
     pub fn status(&self, _: &Request) -> Result<Status> {
         let mut heartbeats = self.heartbeats()?;
         heartbeats.sort();
-        let mut efoy1 = efoy::Efoy::new();
-        let mut efoy2 = efoy::Efoy::new();
+        let mut efoy1 = self.create_efoy();
+        let mut efoy2 = self.create_efoy();
         for heartbeat in &heartbeats {
             efoy1.process(&heartbeat.efoy1)?;
             efoy2.process(&heartbeat.efoy2)?;
@@ -107,8 +107,8 @@ impl Config {
         let mut heartbeats = self.heartbeats()?;
         heartbeats.sort();
         let mut power_history: PowerHistory = Default::default();
-        let mut efoy1 = efoy::Efoy::new();
-        let mut efoy2 = efoy::Efoy::new();
+        let mut efoy1 = self.create_efoy();
+        let mut efoy2 = self.create_efoy();
         for heartbeat in heartbeats {
             efoy1.process(&heartbeat.efoy1)?;
             efoy2.process(&heartbeat.efoy2)?;
@@ -140,6 +140,16 @@ impl Config {
             .versions(&self.versions)
             .iter()
             .map_err(Error::from)
+    }
+
+    fn create_efoy(&self) -> efoy::Efoy {
+        let mut efoy = efoy::Efoy::new();
+        // FIXME
+        efoy.add_cartridge("1.1", 8.0).unwrap();
+        efoy.add_cartridge("1.2", 8.0).unwrap();
+        efoy.add_cartridge("2.1", 8.0).unwrap();
+        efoy.add_cartridge("2.2", 8.0).unwrap();
+        efoy
     }
 }
 

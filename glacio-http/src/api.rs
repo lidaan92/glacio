@@ -1,10 +1,10 @@
 use Result;
-use config::{Config, PersistentConfig};
-use handlers;
+use atlas::handlers::Atlas;
+use cameras::handlers::Cameras;
+use config::Config;
 use iron::{Chain, Handler, IronResult, Request, Response};
 use iron::headers::AccessControlAllowOrigin;
 use logger::Logger;
-use persistent::Read;
 use router::Router;
 use std::path::Path;
 
@@ -27,20 +27,43 @@ impl Api {
         Config::from_path(path).and_then(|config| Api::new(config))
     }
 
-    fn new(config: Config) -> Result<Api> {
+    /// Creates a new api from a Config.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio_http::{Api, Config};
+    /// let config = Config::new();
+    /// let api = Api::new(config);
+    /// ```
+    pub fn new(config: Config) -> Result<Api> {
         let mut router = Router::new();
-        router.get("/cameras", handlers::cameras, "cameras");
-        router.get("/cameras/:name", handlers::camera, "camera");
+        let cameras = Cameras::from(config.cameras);
+        router.get("/cameras",
+                   {
+                       let cameras = cameras.clone();
+                       move |r: &mut Request| cameras.summary(r)
+                   },
+                   "cameras");
+        router.get("/cameras/:name",
+                   {
+                       let cameras = cameras.clone();
+                       move |r: &mut Request| cameras.detail(r)
+                   },
+                   "camera");
         router.get("/cameras/:name/images",
-                   handlers::camera_images,
-                   "camera_images");
-        router.get("/atlas/status", handlers::atlas_status, "atlas_status");
-        router.get("/atlas/power/history",
-                   handlers::atlas_power_history,
-                   "atlas_power_history");
+                   {
+                       let cameras = cameras.clone();
+                       move |r: &mut Request| cameras.images(r)
+                   },
+                   "camera-images");
+
+        let atlas = Atlas::from(config.atlas);
+        router.get("/atlas/status",
+                   move |r: &mut Request| atlas.status(r),
+                   "atlas-status");
 
         let mut chain = Chain::new(router);
-        chain.link(Read::<PersistentConfig>::both(config));
         chain.link(Logger::new(None));
 
         Ok(Api { chain: chain })

@@ -6,6 +6,7 @@
 
 use {Error, Result};
 use regex::Regex;
+use std::slice::Iter;
 use std::str::FromStr;
 
 /// Instantaneous status report from one of our EFOY fuel cell systems.
@@ -44,12 +45,19 @@ pub struct Efoy {
     cartridges: Vec<Cartridge>,
 }
 
+/// An efoy cartridge.
 #[derive(Clone, Debug)]
-struct Cartridge {
+pub struct Cartridge {
     name: String,
     capacity: f32,
     consumed: f32,
     emptied: bool,
+}
+
+/// An iterator over an EFOY's cartridges.
+#[derive(Debug)]
+pub struct Cartridges<'a> {
+    iter: Iter<'a, Cartridge>,
 }
 
 impl FromStr for Heartbeat {
@@ -273,6 +281,19 @@ impl Efoy {
         unreachable!()
     }
 
+    /// Returns an iterator over this efoy's cartridges.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::atlas::Efoy;
+    /// let mut efoy = Efoy::new();
+    /// efoy.add_cartridge("1.1", 8.0);
+    /// assert_eq!(1, efoy.iter().count());
+    pub fn iter(&self) -> Cartridges {
+        Cartridges { iter: self.cartridges.iter() }
+    }
+
     fn cartridge(&self, name: &str) -> Option<&Cartridge> {
         self.cartridges.iter().find(|&cartridge| cartridge.name == name)
     }
@@ -294,17 +315,30 @@ impl Cartridge {
         }
     }
 
+    /// Returns the name of this cartridge.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     fn fuel(&self) -> f32 {
         self.capacity - self.consumed
     }
 
-    fn fuel_percentage(&self) -> f32 {
+    /// Returns the fuel percentage of this cartridge.
+    pub fn fuel_percentage(&self) -> f32 {
         100. * self.fuel() / self.capacity
     }
 
     fn empty(&mut self) {
         self.consumed = self.capacity;
         self.emptied = true;
+    }
+}
+
+impl<'a> Iterator for Cartridges<'a> {
+    type Item = &'a Cartridge;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
     }
 }
 

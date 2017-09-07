@@ -1,13 +1,41 @@
+//! Pagination support for Iron requests.
+//!
+//! Contains a trait, `Paginate`, that is implemented for `Iterator`, that can be used to subset an
+//! iterator based on Iron request parameters.
+
 use Result;
 use iron::{Plugin, Request};
 use params::{Params, Value};
 use std::iter::{Skip, Take};
 
-const DEFAULT_PAGE: usize = 1;
-const DEFAULT_PER_PAGE: usize = 30;
-const MAX_PER_PAGE: usize = 100;
+/// The default page, if one is not specified in the request.
+///
+/// We 1-index pages because Github does.
+pub const DEFAULT_PAGE: usize = 1;
 
+/// The default number of items per page.
+pub const DEFAULT_PER_PAGE: usize = 30;
+
+/// The maximum number of items that can be returned per page.
+///
+/// If more than this amount is requested, the number of items returned is clamped to 100.
+pub const MAX_PER_PAGE: usize = 100;
+
+/// Use an Iron request, specifically its parameters, to paginate over an iterator.
+///
+/// The parameters used:
+///
+/// - `per_page`: How many items to return per page. Defaults to `DEFAULT_PER_PAGE`.
+/// - `page`: The (1-indexed) page to return. This is 1-indexed because Github's is, and I'm just
+/// copying them.
+///
+/// An example paginated request might look like this:
+///
+/// ```bash
+/// curl http://localhost:3000/cameras/ATLAS_CAM/images?page=2&per_page=10
+/// ```
 pub trait Paginate<I> {
+    /// Creates a pagination iterator from a request.
     fn paginate(self, request: &mut Request) -> Result<Take<Skip<I>>>;
 }
 

@@ -1,4 +1,7 @@
-//! HTTP API for glacio data.
+//! JSON API for glacio data.
+//!
+//! This crate uses the `glacio` crate to fetch glacier research data, and turns it into a JSON API
+//! for the web.
 
 #![deny(missing_docs, missing_debug_implementations, missing_copy_implementations, trivial_casts,
         trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
@@ -7,9 +10,10 @@
 extern crate glacio;
 #[macro_use]
 extern crate iron;
+#[cfg(test)]
+extern crate iron_test;
 extern crate logger;
 extern crate params;
-extern crate persistent;
 #[macro_use]
 extern crate router;
 extern crate serde;
@@ -18,20 +22,22 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
 
+pub mod atlas;
+pub mod cameras;
+pub mod paginate;
+
 mod api;
-mod atlas;
-mod camera;
 mod config;
-mod handlers;
-mod pagination;
+mod json;
 
 pub use api::Api;
 pub use config::Config;
+pub use paginate::Paginate;
 
 /// Our custom error enum.
 #[derive(Debug)]
 pub enum Error {
-    /// Configuration error, something wasn't set up correctly for the api.
+    /// Invalid configuration.
     Config(String),
     /// Wrapper around `glacio::Error`.
     Glacio(glacio::Error),

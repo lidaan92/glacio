@@ -14,6 +14,8 @@ pub struct Status {
     pub efoys: Vec<EfoyStatus>,
     /// Timeseries information, used to provide historical context.
     pub timeseries: Timeseries,
+    /// Are the Riegl systems powered?
+    pub are_riegl_systems_on: bool,
 }
 
 /// The status of one of the battery systems.
@@ -132,6 +134,7 @@ impl Status {
                batteries: batteries,
                efoys: efoys,
                timeseries: timeseries,
+               are_riegl_systems_on: heartbeat.are_riegl_systems_on,
            })
     }
 }

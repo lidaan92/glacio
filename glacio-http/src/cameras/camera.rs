@@ -13,6 +13,8 @@ pub struct Summary {
     pub url: String,
     /// The url for this camera's images.
     pub images_url: String,
+    /// The hourly interval that this camera takes pictures.
+    pub interval: f32,
 }
 
 /// A serializable detail about camera data.
@@ -28,6 +30,8 @@ pub struct Detail {
     pub images_url: String,
     /// The most recent image captured by this camera.
     pub latest_image: image::Summary,
+    /// The hourly interval that this camera takes pictures.
+    pub interval: f32,
 }
 
 impl Summary {
@@ -40,6 +44,7 @@ impl Summary {
             images_url: url_for!(request, "camera-images", "name" => camera.name.clone())
                 .as_ref()
                 .to_string(),
+            interval: camera.interval,
         }
     }
 }
@@ -65,6 +70,7 @@ impl Detail {
                url: summary.url,
                images_url: summary.images_url,
                latest_image: image::Summary::new(&images.pop().unwrap(), &config)?,
+               interval: summary.interval,
            })
     }
 }

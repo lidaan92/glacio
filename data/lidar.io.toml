@@ -26,48 +26,58 @@ document_root = "/home/iridiumcam/StarDot"
 name = "ATLAS_CAM"
 description = "ATLAS_CAM is a single remote camera, perched above the ATLAS system with the Helheim Glacier in the background. ATLAS_CAM was installed in 2015 as part of the initial ATLAS installation."
 path = "/home/iridiumcam/StarDot/ATLAS_CAM"
+interval = 3
 
 [[cameras.cameras]]
 name = "ATLAS_CAM2"
 description = "ATLAS_CAM2 is a single remote camera, mounted on a tripod next to the ATLAS system at close range; it was installed in the summer of 2016. ATLAS_CAM2 is timed to take pictures while the scanner is working, as indicated by the red lights on the housing."
 path = "/home/iridiumcam/StarDot/ATLAS_CAM2"
+interval = 6
 
 [[cameras.cameras]]
 name = "HEL_DUAL_1"
 description = "HEL_DUAL is a dual-camera system on the south side of the Helheim Glacier. It was installed in 2016, replacing HEL_TERMINUS. HEL_DUAL_1 is the rightward (eastward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_DUAL/StarDot1"
+interval = 3
 
 [[cameras.cameras]]
 name = "HEL_DUAL_2"
 description = "HEL_DUAL is a dual-camera system on the south side of the Helheim Glacier. It was installed in 2016, replacing HEL_TERMINUS. HEL_DUAL_2 is the leftward (westward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_DUAL/StarDot2"
+interval = 3
 
 [[cameras.cameras]]
 name = "HEL_BERGCAM3_1"
 description = "HEL_BERGCAM3 is a dual-camera system on the north side of the Helheim Glacier, installed in 2017. It is close to the location of the to-be-installed ATLAS2 system. HEL_BERGCAM3_1 is the leftward (eastward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM3/StarDot1"
+interval = 3
 
 [[cameras.cameras]]
 name = "HEL_BERGCAM3_2"
 description = "HEL_BERGCAM3 is a dual-camera system on the north side of the Helheim Glacier, installed in 2017. It is close to the location of the to-be-installed ATLAS2 system. HEL_BERGCAM3_2 is the rightward (westward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM3/StarDot2"
+interval = 3
 
 [[cameras.cameras]]
 name = "HEL_BERGCAM1_1"
 description = "HEL_BERGCAM1 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM1_1 is the rightward (southward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM1/StarDot1"
+interval = 3
 
 [[cameras.cameras]]
 name = "HEL_BERGCAM1_2"
 description = "HEL_BERGCAM1 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM1_2 is the leftward (northward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM1/StarDot2"
+interval = 3
 
 [[cameras.cameras]]
 name = "HEL_BERGCAM2_1"
 description = "HEL_BERGCAM2 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM2_1 is the leftward (northward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM2/StarDot1"
+interval = 3
 
 [[cameras.cameras]]
 name = "HEL_BERGCAM2_2"
 description = "HEL_BERGCAM2 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM2_2 is the rightward (southward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM2/StarDot2"
+interval = 3

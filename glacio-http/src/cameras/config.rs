@@ -22,6 +22,8 @@ pub struct CameraConfig {
     pub description: String,
     /// The local directory that holds the camera images.
     pub path: String,
+    /// The expected hourly interval between pictures.
+    pub interval: f32,
 }
 
 impl Config {

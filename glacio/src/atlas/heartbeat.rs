@@ -25,6 +25,11 @@ pub struct Heartbeat {
     pub efoy1: efoy::Heartbeat,
     /// Information about efoy system 2.
     pub efoy2: efoy::Heartbeat,
+    /// Are the Riegl systems enabled?
+    ///
+    /// There's a hardware switch that disables the housing and scanner. The switch is controlled
+    /// by the data logger, which flips the switch when the state of charges get too low.
+    pub are_riegl_systems_on: bool,
 }
 
 /// Structure for retrieving ATLAS heartbeats from SBD messages.
@@ -73,7 +78,7 @@ impl Heartbeat {
                                                 .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
                                                 (?P<efoy1>.*)\r\n # efoy1
                                                 (?P<efoy2>.*)\r\n # efoy2
-                                                .* # riegl switch
+                                                (?P<riegl_switch>.*) # riegl switch
                                                 \z").unwrap();
         }
         if let Some(captures) = RE.captures(message) {
@@ -99,6 +104,7 @@ impl Heartbeat {
                        .unwrap()
                        .as_str()
                        .parse()?,
+                   are_riegl_systems_on: captures.name("riegl_switch").unwrap().as_str() == "on",
                })
         } else {
             Err(Error::Heartbeat("Unable to parse heartbeat".to_string()))
@@ -242,6 +248,7 @@ mod tests {
         assert_eq!(Utc.ymd(2017, 8, 1).and_hms(0, 0, 55), heartbeat.datetime);
         assert_eq!(94.208, heartbeat.soc1);
         assert_eq!(94.947, heartbeat.soc2);
+        assert!(heartbeat.are_riegl_systems_on);
 
         let efoy1 = heartbeat.efoy1;
         assert_eq!(efoy::State::AutoOff, efoy1.state);

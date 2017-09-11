@@ -92,6 +92,7 @@ mod tests {
                                         name: "ATLAS_CAM".to_string(),
                                         description: "Great camera".to_string(),
                                         path: format!("{}/ATLAS_CAM", builder.root().display()),
+                                        interval: 3.,
                                         ..Default::default()
                                     });
         Api::new(config).unwrap()
@@ -108,6 +109,7 @@ mod tests {
         let camera = json.get(0).unwrap();
         assert_eq!("ATLAS_CAM", camera.get("name").unwrap());
         assert_eq!("Great camera", camera.get("description").unwrap());
+        assert_eq!(3.0, *camera.get("interval").unwrap());
         assert_eq!("http://localhost:3000/cameras/ATLAS_CAM",
                    camera.get("url").unwrap());
         assert_eq!("http://localhost:3000/cameras/ATLAS_CAM/images",
@@ -132,6 +134,7 @@ mod tests {
                    camera.get("url").unwrap());
         assert_eq!("http://localhost:3000/cameras/ATLAS_CAM/images",
                    camera.get("images_url").unwrap());
+        assert_eq!(3.0, *camera.get("interval").unwrap());
         let image = camera.get("latest_image").unwrap();
         assert_eq!("2017-08-06T15:25:00+00:00", image.get("datetime").unwrap());
         assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",

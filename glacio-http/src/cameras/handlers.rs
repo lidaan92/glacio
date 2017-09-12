@@ -2,7 +2,8 @@
 
 use {Error, Paginate, Result};
 use cameras::{CameraConfig, Config, camera, image};
-use iron::{IronResult, Request, Response};
+use iron::{IronResult, Request, Response, status};
+use iron::headers::Location;
 use json;
 use router::Router;
 
@@ -59,6 +60,18 @@ impl Cameras {
         json::response(image_summaries)
     }
 
+    /// Returns a redirect to the src url for the latest image for this camera.
+    pub fn latest_image_redirect(&self, request: &mut Request) -> IronResult<Response> {
+        let camera_config = iexpect!(self.camera_config(request));
+        let camera = itry!(camera_config.to_camera());
+        let image = iexpect!(camera.latest_image());
+        let server = itry!(self.config.server());
+        let url = itry!(server.url_for(&image));
+        let mut response = Response::with(status::Found);
+        response.headers.set(Location(url.to_string()));
+        Ok(response)
+    }
+
     fn name(&self, request: &mut Request) -> Option<String> {
         request.extensions
             .get::<Router>()
@@ -82,6 +95,8 @@ mod tests {
     use {Api, Config};
     use cameras::CameraConfig;
     use iron::Headers;
+    use iron::headers::Location;
+    use iron::status::Status;
     use iron_test::{ProjectBuilder, request, response};
     use serde_json::{self, Value};
 
@@ -164,5 +179,23 @@ mod tests {
         assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152506.jpg",
                    image.get("url").unwrap());
         assert_eq!(None, images.get(2));
+    }
+
+    #[test]
+    fn camera_latest_image_src() {
+        let mut builder = ProjectBuilder::new("camera");
+        for i in 0..10 {
+            builder = builder.file(format!("ATLAS_CAM/ATLAS_CAM_20170806_15250{}.jpg", i), "");
+        }
+        builder.build();
+        let handler = build_api(&builder);
+        let response = request::get("http://localhost:3000/cameras/ATLAS_CAM/images/latest/redirect",
+                                    Headers::new(),
+                                    &handler)
+                .unwrap();
+        assert_eq!(Some(Status::Found), response.status);
+        assert_eq!(&Location("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152509.jpg"
+                                 .to_string()),
+                   response.headers.get::<Location>().unwrap());
     }
 }

@@ -98,6 +98,30 @@ impl Camera {
             .map_err(Error::from)
     }
 
+    /// Returns this camera's latest image, or None if there are no images for this camera.
+    ///
+    /// Images are ordered by their time of capture, as determined by their filename.
+    ///
+    /// Any underlying errors in the image iterator are turned into `None`. If you need to see the
+    /// errors, use `Camera::images()`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use glacio::Camera;
+    /// let camera = Camera::new("data/ATLAS_CAM").unwrap();
+    /// let image = camera.latest_image().unwrap();
+    /// ```
+    pub fn latest_image(&self) -> Option<Image> {
+        if let Ok(images) = self.images() {
+            let mut images = images.filter_map(|r| r.ok()).collect::<Vec<_>>();
+            images.sort();
+            images.pop()
+        } else {
+            None
+        }
+    }
+
     /// Returns this camera's path.
     ///
     /// # Examples

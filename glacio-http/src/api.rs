@@ -57,6 +57,12 @@ impl Api {
                        move |r: &mut Request| cameras.images(r)
                    },
                    "camera-images");
+        router.get("/cameras/:name/images/latest/redirect",
+                   {
+                       let cameras = cameras.clone();
+                       move |r: &mut Request| cameras.latest_image_redirect(r)
+                   },
+                   "camera-latest-image-src");
 
         let atlas = Atlas::from(config.atlas);
         router.get("/atlas/status",

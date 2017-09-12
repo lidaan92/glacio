@@ -11,7 +11,7 @@ All datetimes are returned as ISO 8601, e.g. `2017-09-12T16:12:42-06:00`.
 
 ## Pagination
 
-Requests that return multiple items return 30 imtes by default.
+Requests that return multiple items return 30 items by default.
 To change that number, use the `?per_page` parameter.
 To select the page, use the `?page` parameter.
 Note that page numbering is 1-indexed.
@@ -79,13 +79,13 @@ GET /cameras/:name/images
 Results are paginated, so use `?page` and `?per_page`.
 Images are returned most recent first (descending datetime order).
 
-## Responase
+## Response
 
 ```json
 [
   {
     "datetime": "2017-09-12T21:25:00+00:00",
-        "url": "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170912_212500.jpg"
+    "url": "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170912_212500.jpg"
   },
   {
     "datetime": "2017-09-12T18:25:00+00:00",

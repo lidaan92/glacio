@@ -129,6 +129,8 @@ mod tests {
                    camera.get("url").unwrap());
         assert_eq!("http://localhost:3000/cameras/ATLAS_CAM/images",
                    camera.get("images_url").unwrap());
+        assert_eq!("http://localhost:3000/cameras/ATLAS_CAM/images/latest/redirect",
+                   camera.get("latest_image_redirect_url").unwrap());
     }
 
     #[test]

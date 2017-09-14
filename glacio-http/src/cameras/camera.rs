@@ -13,6 +13,8 @@ pub struct Summary {
     pub url: String,
     /// The url for this camera's images.
     pub images_url: String,
+    /// The url for the latest image.
+    pub latest_image_redirect_url: String,
     /// The hourly interval that this camera takes pictures.
     pub interval: f32,
 }
@@ -44,6 +46,10 @@ impl Summary {
             images_url: url_for!(request, "camera-images", "name" => camera.name.clone())
                 .as_ref()
                 .to_string(),
+            latest_image_redirect_url:
+                url_for!(request, "camera-latest-image-redirect", "name" => camera.name.clone())
+                    .as_ref()
+                    .to_string(),
             interval: camera.interval,
         }
     }

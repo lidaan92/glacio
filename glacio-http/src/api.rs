@@ -62,7 +62,7 @@ impl Api {
                        let cameras = cameras.clone();
                        move |r: &mut Request| cameras.latest_image_redirect(r)
                    },
-                   "camera-latest-image-src");
+                   "camera-latest-image-redirect");
 
         let atlas = Atlas::from(config.atlas);
         router.get("/atlas/status",

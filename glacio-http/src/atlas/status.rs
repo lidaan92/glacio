@@ -98,7 +98,7 @@ impl Status {
             timeseries.states_of_charge
                 .get_mut(&2)
                 .unwrap()
-                .push(heartbeat.soc1);
+                .push(heartbeat.soc2);
             timeseries.efoy_current
                 .get_mut(&1)
                 .unwrap()
@@ -106,7 +106,7 @@ impl Status {
             timeseries.efoy_current
                 .get_mut(&2)
                 .unwrap()
-                .push(heartbeat.efoy1.current);
+                .push(heartbeat.efoy2.current);
             timeseries.efoy_voltage
                 .get_mut(&1)
                 .unwrap()
@@ -114,7 +114,7 @@ impl Status {
             timeseries.efoy_voltage
                 .get_mut(&2)
                 .unwrap()
-                .push(heartbeat.efoy1.current);
+                .push(heartbeat.efoy2.current);
             timeseries.efoy_fuel_percentage
                 .get_mut(&1)
                 .unwrap()

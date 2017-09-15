@@ -39,10 +39,12 @@ pub use paginate::Paginate;
 /// Our custom error enum.
 #[derive(Debug)]
 pub enum Error {
+    /// Wrapper around `glacio::atlas::Error`.
+    Atlas(glacio::atlas::Error),
+    /// Wrapper around `glacio::camera::Error`.
+    Camera(glacio::camera::Error),
     /// Invalid configuration.
     Config(String),
-    /// Wrapper around `glacio::Error`.
-    Glacio(glacio::Error),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
     /// Wrapper around `std::num::ParseIntError`.
@@ -66,23 +68,30 @@ impl From<std::num::ParseIntError> for Error {
     }
 }
 
-impl From<glacio::Error> for Error {
-    fn from(err: glacio::Error) -> Error {
-        Error::Glacio(err)
-    }
-}
-
 impl From<toml::de::Error> for Error {
     fn from(err: toml::de::Error) -> Error {
         Error::TomlDe(err)
     }
 }
 
+impl From<glacio::atlas::Error> for Error {
+    fn from(err: glacio::atlas::Error) -> Error {
+        Error::Atlas(err)
+    }
+}
+
+impl From<glacio::camera::Error> for Error {
+    fn from(err: glacio::camera::Error) -> Error {
+        Error::Camera(err)
+    }
+}
+
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
+            Error::Atlas(ref err) => err.description(),
+            Error::Camera(ref err) => err.description(),
             Error::Config(_) => "api configuration error",
-            Error::Glacio(ref err) => err.description(),
             Error::Io(ref err) => err.description(),
             Error::ParseInt(ref err) => err.description(),
             Error::TomlDe(ref err) => err.description(),
@@ -91,8 +100,9 @@ impl std::error::Error for Error {
 
     fn cause(&self) -> Option<&std::error::Error> {
         match *self {
+            Error::Atlas(ref err) => Some(err),
+            Error::Camera(ref err) => Some(err),
             Error::Config(_) => None,
-            Error::Glacio(ref err) => Some(err),
             Error::Io(ref err) => Some(err),
             Error::ParseInt(ref err) => Some(err),
             Error::TomlDe(ref err) => Some(err),
@@ -103,8 +113,9 @@ impl std::error::Error for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
+            Error::Atlas(ref err) => write!(f, "atlas error: {}", err),
+            Error::Camera(ref err) => write!(f, "camera error: {}", err),
             Error::Config(ref msg) => write!(f, "api configuration error: {}", msg),
-            Error::Glacio(ref err) => write!(f, "glacio error: {}", err),
             Error::Io(ref err) => write!(f, "io error: {}", err),
             Error::ParseInt(ref err) => write!(f, "parse int error: {}", err),
             Error::TomlDe(ref err) => write!(f, "toml de error: {}", err),

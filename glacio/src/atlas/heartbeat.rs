@@ -196,7 +196,7 @@ impl Iterator for ReadSbd {
             if datetime.is_none() {
                 datetime = Some(sbd_message.time_of_session());
             }
-            match message.push(sbd_message.payload_str().unwrap()) {
+            match message.add(sbd_message.payload_str().unwrap()) {
                 Ok(new_message) => {
                     if new_message.is_complete() {
                         match Heartbeat::new(&String::from(new_message), datetime.unwrap()) {
@@ -214,7 +214,7 @@ impl Iterator for ReadSbd {
                         message = new_message;
                     }
                 }
-                Err(err) => return Some(Err(err)),
+                Err(err) => return Some(Err(err.into())),
             }
         }
         None

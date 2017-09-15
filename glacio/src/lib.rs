@@ -25,8 +25,8 @@ extern crate url;
 
 pub mod atlas;
 pub mod camera;
+pub mod sutron;
 
-mod sutron;
 mod utils;
 
 pub use camera::{Camera, Image};
@@ -56,6 +56,8 @@ pub enum Error {
     Sbd(sbd::Error),
     /// Wrapper around `std::path::StripPrefixError`.
     StripPrefix(std::path::StripPrefixError),
+    /// Wrapper around `glacio::sutron::message::Error`.
+    SutronMessage(sutron::message::Error),
     /// Wrapper around `url::ParseError`.
     UrlParse(url::ParseError),
 }
@@ -102,6 +104,12 @@ impl From<url::ParseError> for Error {
     }
 }
 
+impl From<sutron::message::Error> for Error {
+    fn from(err: sutron::message::Error) -> Error {
+        Error::SutronMessage(err)
+    }
+}
+
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
@@ -115,6 +123,7 @@ impl std::error::Error for Error {
             Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
+            Error::SutronMessage(ref err) => err.description(),
             Error::UrlParse(ref err) => err.description(),
         }
     }
@@ -127,6 +136,7 @@ impl std::error::Error for Error {
             Error::ParseInt(ref err) => Some(err),
             Error::Sbd(ref err) => Some(err),
             Error::StripPrefix(ref err) => Some(err),
+            Error::SutronMessage(ref err) => Some(err),
             Error::UrlParse(ref err) => Some(err),
             _ => None,
         }
@@ -148,6 +158,7 @@ impl std::fmt::Display for Error {
             Error::ParseInt(ref err) => err.fmt(f),
             Error::Sbd(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),
+            Error::SutronMessage(ref err) => err.fmt(f),
             Error::UrlParse(ref err) => err.fmt(f),
         }
     }

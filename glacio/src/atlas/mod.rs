@@ -39,6 +39,7 @@
 //! undoubtedly update the heartbeat format and use the same format for both systems. This module
 //! will require an update to handle the new heartbeat version.
 
+pub mod battery;
 pub mod efoy;
 pub mod scanner;
 

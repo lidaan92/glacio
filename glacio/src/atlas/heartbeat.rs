@@ -1,10 +1,10 @@
-use atlas::{Error, Result};
-use atlas::efoy;
+use atlas::{Error, Result, battery, efoy};
 use atlas::scanner::{ScanStop, ScannerPowerOn};
 use chrono::{DateTime, Utc};
 use regex::Regex;
 use sbd::mo::Message;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
 
@@ -33,10 +33,10 @@ pub struct Heartbeat {
     pub version: u8,
     /// The date and time of the *first* heartbeat sbd message.
     pub datetime: DateTime<Utc>,
-    /// The state of charge of the first battery.
-    pub soc1: f32,
-    /// The state of charge of the second battery.
-    pub soc2: f32,
+    /// The state of charge of the battery systems.
+    ///
+    /// Batteries are mapped by their id number, which is 1-indexed.
+    pub batteries: BTreeMap<u8, battery::Heartbeat>,
     /// Information provided when the scanner powers on.
     pub scanner_power_on: ScannerPowerOn,
     /// The datetime of the last scan start.
@@ -91,17 +91,21 @@ impl Ord for Heartbeat {
 impl Heartbeat {
     fn new(message: &str, datetime: DateTime<Utc>) -> Result<Heartbeat> {
         use sutron;
+        use std::collections::BTreeMap;
+
         if let Some(ref captures) = RE.captures(message) {
+            let mut batteries = BTreeMap::new();
+            batteries.insert(1, parse_name_from_captures!(captures, "soc1"));
+            batteries.insert(2, parse_name_from_captures!(captures, "soc2"));
             Ok(Heartbeat {
                    version: parse_name_from_captures!(captures, "version"),
                    datetime: datetime,
+                   batteries: batteries,
                    scanner_power_on: parse_name_from_captures!(captures, "scanner_power_on"),
                    scan_start: sutron::parse_datetime::<Error>(captures.name("scan_start")
                                                                    .unwrap()
                                                                    .as_str())?,
                    scan_stop: parse_name_from_captures!(captures, "scan_stop"),
-                   soc1: parse_name_from_captures!(captures, "soc1"),
-                   soc2: parse_name_from_captures!(captures, "soc2"),
                    efoy1: parse_name_from_captures!(captures, "efoy1"),
                    efoy2: parse_name_from_captures!(captures, "efoy2"),
                    are_riegl_systems_on: captures.name("riegl_switch").unwrap().as_str() == "on",
@@ -246,8 +250,8 @@ mod tests {
             .unwrap();
         assert_eq!(3, heartbeat.version);
         assert_eq!(Utc.ymd(2017, 8, 1).and_hms(0, 0, 55), heartbeat.datetime);
-        assert_eq!(94.208, heartbeat.soc1);
-        assert_eq!(94.947, heartbeat.soc2);
+        assert_eq!(94.208, heartbeat.batteries[&1].state_of_charge);
+        assert_eq!(94.947, heartbeat.batteries[&2].state_of_charge);
         assert_eq!(Utc.ymd(2017, 7, 31).and_hms(18, 1, 52),
                    heartbeat.scan_start);
         assert!(heartbeat.are_riegl_systems_on);

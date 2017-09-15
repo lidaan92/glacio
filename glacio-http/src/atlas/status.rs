@@ -80,15 +80,17 @@ impl Status {
         heartbeats.sort();
         let mut efoy1 = config.efoy()?;
         let mut efoy2 = config.efoy()?;
-        let mut timeseries = Timeseries::new();
+        let mut timeseries = Timeseries::new(&heartbeats[0]);
         for heartbeat in &heartbeats {
             efoy1.process(&heartbeat.efoy1)?;
             efoy2.process(&heartbeat.efoy2)?;
             timeseries.process(&heartbeat, &efoy1, &efoy2);
         }
         let heartbeat = heartbeats.pop().unwrap();
-        let batteries = vec![BatteryStatus::new(1, heartbeat.soc1),
-                             BatteryStatus::new(2, heartbeat.soc2)];
+        let batteries = heartbeat.batteries
+            .iter()
+            .map(|(&i, battery)| BatteryStatus::new(i, battery.state_of_charge))
+            .collect();
         let efoys = vec![EfoyStatus::new(1, &efoy1, &heartbeat.efoy1),
                          EfoyStatus::new(2, &efoy2, &heartbeat.efoy2)];
         Ok(Status {
@@ -132,13 +134,15 @@ impl EfoyStatus {
 }
 
 impl Timeseries {
-    fn new() -> Timeseries {
-        let mut states_of_charge = HashMap::new();
+    fn new(heartbeat: &Heartbeat) -> Timeseries {
+        let states_of_charge = heartbeat.batteries
+            .iter()
+            .map(|(&i, _)| (i, Vec::new()))
+            .collect();
         let mut efoy_current = HashMap::new();
         let mut efoy_fuel_percentage = HashMap::new();
         let mut efoy_voltage = HashMap::new();
         for id in 0..2 {
-            states_of_charge.insert(id + 1, Vec::new());
             efoy_current.insert(id + 1, Vec::new());
             efoy_fuel_percentage.insert(id + 1, Vec::new());
             efoy_voltage.insert(id + 1, Vec::new());
@@ -154,14 +158,9 @@ impl Timeseries {
 
     fn process(&mut self, heartbeat: &Heartbeat, efoy1: &Efoy, efoy2: &Efoy) {
         self.datetimes.push(heartbeat.datetime.to_rfc3339());
-        self.states_of_charge
-            .get_mut(&1)
-            .unwrap()
-            .push(heartbeat.soc1);
-        self.states_of_charge
-            .get_mut(&2)
-            .unwrap()
-            .push(heartbeat.soc2);
+        for (i, states_of_charge) in self.states_of_charge.iter_mut() {
+            states_of_charge.push(heartbeat.batteries[i].state_of_charge);
+        }
         self.efoy_current
             .get_mut(&1)
             .unwrap()

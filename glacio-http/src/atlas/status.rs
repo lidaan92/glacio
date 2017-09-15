@@ -12,6 +12,8 @@ pub struct Status {
     pub batteries: Vec<BatteryStatus>,
     /// A list of efoy status information.
     pub efoys: Vec<EfoyStatus>,
+    /// Information about the last scan.
+    pub last_scan: LastScan,
     /// Timeseries information, used to provide historical context.
     pub timeseries: Timeseries,
     /// Are the Riegl systems powered?
@@ -75,6 +77,13 @@ pub struct Timeseries {
     efoys: BTreeMap<u8, Efoy>,
 }
 
+/// The last scan.
+#[derive(Debug, Serialize)]
+pub struct LastScan {
+    start: String,
+    end: Option<String>,
+}
+
 impl Status {
     /// Creates a new status from a configuration and a request.
     pub fn new(config: &Config) -> Result<Status> {
@@ -95,6 +104,7 @@ impl Status {
                efoys: timeseries.efoys(&heartbeat),
                timeseries: timeseries,
                are_riegl_systems_on: heartbeat.are_riegl_systems_on,
+               last_scan: LastScan::new(&heartbeat),
            })
     }
 }
@@ -188,5 +198,20 @@ impl Timeseries {
             .iter()
             .map(|(&i, efoy)| EfoyStatus::new(i, efoy, &heartbeat.efoys[&i]))
             .collect()
+    }
+}
+
+impl LastScan {
+    fn new(heartbeat: &Heartbeat) -> LastScan {
+        let start = heartbeat.scan_start;
+        let end = heartbeat.scan_stop.datetime;
+        LastScan {
+            start: start.to_rfc3339(),
+            end: if start < end {
+                Some(end.to_rfc3339())
+            } else {
+                None
+            },
+        }
     }
 }

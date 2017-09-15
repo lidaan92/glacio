@@ -118,6 +118,10 @@ GET /atlas/status
 ```json
 {
   "last_heartbeat_received": "2017-09-12T22:02:21+00:00",
+  "last_scan": {
+    "start": "2017-09-12T12:00:01+00:00",
+    "end": "2017-09-12T12:49:01+00:00"
+  },
   "batteries": [
     {
       "id": 1,

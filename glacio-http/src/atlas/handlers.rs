@@ -53,6 +53,8 @@ mod tests {
             .unwrap();
         assert_eq!("2017-08-25T15:01:06+00:00",
                    status["last_heartbeat_received"]);
+        assert_eq!("2017-08-25T12:02:08+00:00", status["last_scan"]["start"]);
+        assert_eq!("2017-08-25T12:41:42+00:00", status["last_scan"]["end"]);
         assert_eq!(1, status["batteries"][0]["id"]);
         assert_eq!(85.461, status["batteries"][0]["state_of_charge"]);
         assert_eq!(2, status["batteries"][1]["id"]);

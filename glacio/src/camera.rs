@@ -4,16 +4,37 @@
 //! at regular intervals, then send those pictures back to a home server via a satellite
 //! connection. The images are served via HTTP, right now by http://iridiumcam.lidar.io.
 
-use {Error, Result};
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{self, DateTime, TimeZone, Utc};
+use std::{error, io, result};
 use std::cmp::Ordering;
 use std::ffi::OsString;
+use std::fmt::{self, Display, Formatter};
 use std::fs::ReadDir;
-use std::path::{Path, PathBuf};
-use url::Url;
+use std::path::{Path, PathBuf, StripPrefixError};
+use url::{self, Url};
 
 const DEFAULT_EXTENSIONS: &'static [&'static str] = &["jpg"];
 const DEFAULT_SERVER_BASE_URL: &'static str = "http://iridiumcam.lidar.io";
+
+/// A custom error enum for cameras.
+#[derive(Debug)]
+pub enum Error {
+    /// Wrapper around `chrono::ParseError`.
+    ChronoParse(chrono::ParseError),
+    /// The file stem is too short to parse for a datetime.
+    FileStemTooShort(String),
+    /// Wrapper around `std::io::Error`.
+    Io(io::Error),
+    /// No file stem for the provided path.
+    NoFileStem(PathBuf),
+    /// Wrapper around `std::path::StripPrefixError`.
+    StripPrefix(StripPrefixError),
+    /// Wrapper around `url::ParseError`.
+    UrlParse(url::ParseError),
+}
+
+/// Our custom result type.
+pub type Result<T> = result::Result<T, Error>;
 
 /// A remote camera, usually used to take pictures of glaciers or other cool stuff.
 #[derive(Debug)]
@@ -54,6 +75,71 @@ pub struct Image {
 pub struct Server {
     base_url: Url,
     document_root: PathBuf,
+}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Error {
+        Error::Io(err)
+    }
+}
+
+impl From<StripPrefixError> for Error {
+    fn from(err: StripPrefixError) -> Error {
+        Error::StripPrefix(err)
+    }
+}
+
+impl From<chrono::ParseError> for Error {
+    fn from(err: chrono::ParseError) -> Error {
+        Error::ChronoParse(err)
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(err: url::ParseError) -> Error {
+        Error::UrlParse(err)
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::ChronoParse(ref err) => err.description(),
+            Error::FileStemTooShort(_) => "file stem is too short",
+            Error::Io(ref err) => err.description(),
+            Error::NoFileStem(_) => "no file stem for path",
+            Error::StripPrefix(ref err) => err.description(),
+            Error::UrlParse(ref err) => err.description(),
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match *self {
+            Error::ChronoParse(ref err) => Some(err),
+            Error::FileStemTooShort(_) => None,
+            Error::Io(ref err) => Some(err),
+            Error::NoFileStem(_) => None,
+            Error::StripPrefix(ref err) => Some(err),
+            Error::UrlParse(ref err) => Some(err),
+        }
+    }
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match *self {
+            Error::ChronoParse(ref err) => err.fmt(f),
+            Error::FileStemTooShort(ref file_stem) => {
+                write!(f,
+                       "file stem is too short for datetime parsing: {}",
+                       file_stem)
+            }
+            Error::Io(ref err) => err.fmt(f),
+            Error::NoFileStem(ref path) => write!(f, "no file stem for path: {}", path.display()),
+            Error::StripPrefix(ref err) => err.fmt(f),
+            Error::UrlParse(ref err) => err.fmt(f),
+        }
+    }
 }
 
 impl Camera {
@@ -174,7 +260,7 @@ impl Image {
         let path = path.as_ref().canonicalize()?;
         if let Some(file_stem) = path.file_stem().and_then(|file_stem| file_stem.to_str()) {
             if file_stem.len() <= 15 {
-                Err(Error::ImageFilename(format!("File stem {} is too short", file_stem)))
+                Err(Error::FileStemTooShort(file_stem.to_string()))
             } else {
                 let (_, s) = file_stem.split_at(file_stem.len() - 15);
                 Utc.datetime_from_str(s, "%Y%m%d_%H%M%S")
@@ -182,7 +268,7 @@ impl Image {
                     .map(|datetime| Image { datetime: datetime, path: path.clone() })
             }
         } else {
-            Err(Error::ImageFilename(format!("No file stem found for path: {:?}", path)))
+            Err(Error::NoFileStem(path.clone()))
         }
     }
 

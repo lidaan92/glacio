@@ -52,7 +52,8 @@ impl Cameras {
                                                      .collect::<Result<Vec<_>>>()
                                              }));
         images.sort_by(|a, b| b.cmp(a));
-        let image_summaries = itry!(images.into_iter().paginate(request).and_then(|iter| {
+        let image_summaries =
+            itry!(images.into_iter().paginate(request).and_then(|iter| {
                                                                                       iter
                       .map(|image| image::Summary::new(&image, &self.config))
                       .collect::<Result<Vec<_>>>()

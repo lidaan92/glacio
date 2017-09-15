@@ -2,7 +2,7 @@ use Result;
 use atlas::handlers::Atlas;
 use cameras::handlers::Cameras;
 use config::Config;
-use iron::{Chain, Handler, IronResult, Request, Response, Url};
+use iron::{AfterMiddleware, Chain, Handler, IronError, IronResult, Request, Response, Url};
 use iron::headers::AccessControlAllowOrigin;
 use logger::Logger;
 use router::Router;
@@ -13,6 +13,8 @@ use std::path::Path;
 pub struct Api {
     chain: Chain,
 }
+
+struct Custom404;
 
 impl Api {
     /// Creates a new api from the provided path to a toml config file.
@@ -74,6 +76,8 @@ impl Api {
         let mut chain = Chain::new(router);
         chain.link(Logger::new(None));
 
+        chain.link_after(Custom404);
+
         Ok(Api { chain: chain })
     }
 }
@@ -90,6 +94,25 @@ impl Handler for Api {
                          iron_error.response.headers.set(AccessControlAllowOrigin::Any);
                          iron_error
                      })
+    }
+}
+
+impl AfterMiddleware for Custom404 {
+    fn catch(&self, _: &mut Request, err: IronError) -> IronResult<Response> {
+        use router::NoRoute;
+        use iron::status;
+        use serde_json;
+        use iron::headers::ContentType;
+
+        if let Some(_) = err.error.downcast::<NoRoute>() {
+            let mut response =
+                Response::with((status::NotFound,
+                                serde_json::to_string(&json!({"message": "Not found"})).unwrap()));
+            response.headers.set(ContentType::json());
+            Ok(response)
+        } else {
+            Err(err)
+        }
     }
 }
 

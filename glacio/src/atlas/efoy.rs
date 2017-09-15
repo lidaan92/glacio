@@ -9,6 +9,15 @@ use regex::Regex;
 use std::slice::Iter;
 use std::str::FromStr;
 
+lazy_static! {
+    static ref HEARTBEAT_REGEX: Regex = Regex::new(r"(?x)^
+        (?P<state>.*),
+        cartridge\s(?P<cartridge>.*)\sconsumed\s(?P<consumed>\d+\.\d+)l,
+        (?P<voltage>.*),
+        (?P<current>.*)
+        $").unwrap();
+}
+
 /// Instantaneous status report from one of our EFOY fuel cell systems.
 #[derive(Clone, Debug, Default, PartialEq, PartialOrd)]
 pub struct Heartbeat {
@@ -63,34 +72,17 @@ pub struct Cartridges<'a> {
 impl FromStr for Heartbeat {
     type Err = Error;
     fn from_str(s: &str) -> Result<Heartbeat> {
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?x)^(?P<state>.*),
-                                                    cartridge\s(?P<cartridge>.*)\sconsumed\s(?P<consumed>\d+\.\d+)l,
-                                                    (?P<voltage>.*),
-                                                    (?P<current>.*)$").unwrap();
-        }
-        if let Some(captures) = RE.captures(s) {
+        use utils;
+        if let Some(ref captures) = HEARTBEAT_REGEX.captures(s) {
             Ok(Heartbeat {
-                   state: captures.name("state")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
+                   state: utils::parse_capture(captures, "state")?,
                    cartridge: captures.name("cartridge")
                        .unwrap()
                        .as_str()
                        .to_string(),
-                   consumed: captures.name("consumed")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
-                   voltage: captures.name("voltage")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
-                   current: captures.name("current")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
+                   consumed: utils::parse_capture(captures, "consumed")?,
+                   voltage: utils::parse_capture(captures, "voltage")?,
+                   current: utils::parse_capture(captures, "current")?,
                })
         } else {
             Err(Error::Heartbeat(format!("Unable to parse efoy: {}", s)))

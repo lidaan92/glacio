@@ -1,6 +1,17 @@
 use {Error, Result};
+use chrono::{DateTime, TimeZone, Utc};
 use regex::Regex;
 use std::str::FromStr;
+
+lazy_static! {
+    static ref SELF_TIMED_EXTENDED_REGEX: Regex = Regex::new(r"(?sx)^
+        1,
+        (?P<id>\d+),
+        (?P<start_byte>\d+)
+        (,(?P<total_bytes>\d+))?:(?P<data>.*)
+        $").unwrap();
+}
+const DATETIME_FORMAT: &'static str = "%m/%d/%y %H:%M:%S";
 
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -24,6 +35,10 @@ pub enum Packet {
     },
     ForcedTransmission(String),
     ForcedTransmissionExtended(String),
+}
+
+pub fn parse_datetime(s: &str) -> Result<DateTime<Utc>> {
+    Utc.datetime_from_str(s, DATETIME_FORMAT).map_err(Error::from)
 }
 
 impl From<Message> for String {
@@ -131,25 +146,15 @@ impl From<Packet> for String {
 impl FromStr for Packet {
     type Err = Error;
     fn from_str(s: &str) -> Result<Packet> {
+        use utils;
+
         match &s[0..1] {
             "0" => Ok(Packet::SelfTimed(s[1..].to_string())),
             "1" => {
-                lazy_static! {
-                    static ref RE: Regex = Regex::new(r"(?sx)^1,
-                                                        (?P<id>\d+),
-                                                        (?P<start_byte>\d+)
-                                                        (,(?P<total_bytes>\d+))?:(?P<data>.*)$").unwrap();
-                }
-                if let Some(captures) = RE.captures(s) {
+                if let Some(ref captures) = SELF_TIMED_EXTENDED_REGEX.captures(s) {
                     Ok(Packet::SelfTimedExtended {
-                           id: captures.name("id")
-                               .unwrap()
-                               .as_str()
-                               .parse()?,
-                           start_byte: captures.name("start_byte")
-                               .unwrap()
-                               .as_str()
-                               .parse()?,
+                           id: utils::parse_capture(captures, "id")?,
+                           start_byte: utils::parse_capture(captures, "start_byte")?,
                            total_bytes: captures.name("total_bytes")
                                .map_or(Ok(None), |s| s.as_str().parse().map(Some))?,
                            data: captures.name("data")

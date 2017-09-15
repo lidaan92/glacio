@@ -1,5 +1,6 @@
 use {Error, Result};
 use atlas::efoy;
+use atlas::scanner::ScanStop;
 use chrono::{DateTime, Utc};
 use regex::Regex;
 use sbd::mo::Message;
@@ -21,6 +22,10 @@ pub struct Heartbeat {
     pub soc1: f32,
     /// The state of charge of the second battery.
     pub soc2: f32,
+    /// The datetime of the last scan start.
+    pub scan_start: DateTime<Utc>,
+    /// Information about the last completed scan.
+    pub scan_stop: ScanStop,
     /// Information about efoy system 1.
     pub efoy1: efoy::Heartbeat,
     /// Information about efoy system 2.
@@ -68,12 +73,14 @@ impl Ord for Heartbeat {
 
 impl Heartbeat {
     fn new(message: &str, datetime: DateTime<Utc>) -> Result<Heartbeat> {
+        use {sutron, utils};
+
         lazy_static! {
             static ref RE: Regex = Regex::new(r"(?x)^ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
                                                 .*\r\n # scanner on
                                                 .*\r\n # external temp, pressure, rh
-                                                .*\r\n # scan start
-                                                .*\r\n # scan stop
+                                                (?P<scan_start>.*)\r\n
+                                                (?P<scan_stop>.*)\r\n
                                                 .*\r\n # scan skip
                                                 .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
                                                 (?P<efoy1>.*)\r\n # efoy1
@@ -81,29 +88,18 @@ impl Heartbeat {
                                                 (?P<riegl_switch>.*) # riegl switch
                                                 \z").unwrap();
         }
-        if let Some(captures) = RE.captures(message) {
+        if let Some(ref captures) = RE.captures(message) {
             Ok(Heartbeat {
-                   version: captures.name("version")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
+                   version: utils::parse_capture(captures, "version")?,
                    datetime: datetime,
-                   soc1: captures.name("soc1")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
-                   soc2: captures.name("soc2")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
-                   efoy1: captures.name("efoy1")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
-                   efoy2: captures.name("efoy2")
-                       .unwrap()
-                       .as_str()
-                       .parse()?,
+                   scan_start: sutron::parse_datetime(captures.name("scan_start")
+                                                          .unwrap()
+                                                          .as_str())?,
+                   scan_stop: utils::parse_capture(captures, "scan_stop")?,
+                   soc1: utils::parse_capture(captures, "soc1")?,
+                   soc2: utils::parse_capture(captures, "soc2")?,
+                   efoy1: utils::parse_capture(captures, "efoy1")?,
+                   efoy2: utils::parse_capture(captures, "efoy2")?,
                    are_riegl_systems_on: captures.name("riegl_switch").unwrap().as_str() == "on",
                })
         } else {
@@ -248,7 +244,20 @@ mod tests {
         assert_eq!(Utc.ymd(2017, 8, 1).and_hms(0, 0, 55), heartbeat.datetime);
         assert_eq!(94.208, heartbeat.soc1);
         assert_eq!(94.947, heartbeat.soc2);
+        assert_eq!(Utc.ymd(2017, 7, 31).and_hms(18, 1, 52),
+                   heartbeat.scan_start);
         assert!(heartbeat.are_riegl_systems_on);
+
+        let scan_stop = heartbeat.scan_stop;
+        assert_eq!(Utc.ymd(2017, 7, 31).and_hms(18, 40, 56), scan_stop.datetime);
+        assert_eq!(19512617, scan_stop.num_points);
+        assert_eq!(-40.592, scan_stop.range_min);
+        assert_eq!(5163.537, scan_stop.range_max);
+        assert_eq!(275844.636, scan_stop.file_size);
+        assert_eq!(1, scan_stop.amplitude_min);
+        assert_eq!(37, scan_stop.amplitude_max);
+        assert_eq!(-0.340, scan_stop.roll);
+        assert_eq!(-0.198, scan_stop.pitch);
 
         let efoy1 = heartbeat.efoy1;
         assert_eq!(efoy::State::AutoOff, efoy1.state);

@@ -40,6 +40,8 @@
 //! will require an update to handle the new heartbeat version.
 
 pub mod efoy;
+pub mod scanner;
+
 mod heartbeat;
 
 pub use self::efoy::Efoy;

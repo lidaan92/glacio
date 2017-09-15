@@ -27,6 +27,7 @@ pub mod atlas;
 pub mod camera;
 
 mod sutron;
+mod utils;
 
 pub use camera::{Camera, Image};
 

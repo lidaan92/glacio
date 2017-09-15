@@ -1,6 +1,6 @@
 use Result;
 use atlas::Config;
-use glacio::atlas::{Efoy, efoy};
+use glacio::atlas::{Efoy, Heartbeat, efoy};
 use std::collections::HashMap;
 
 /// An ATLAS status report.
@@ -59,7 +59,7 @@ pub struct CartridgeStatus {
 ///
 /// We don't want to duplicate keys when pushing JSON, so this object has many vector members, instead of being
 /// included in a vector itself.
-#[derive(Debug, Default, Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Timeseries {
     /// The list of dates and times for this timeseries.
     pub datetimes: Vec<String>,
@@ -80,49 +80,11 @@ impl Status {
         heartbeats.sort();
         let mut efoy1 = config.efoy()?;
         let mut efoy2 = config.efoy()?;
-        let mut timeseries = Timeseries::default();
-        for i in 1..3 {
-            timeseries.states_of_charge.insert(i, Vec::new());
-            timeseries.efoy_current.insert(i, Vec::new());
-            timeseries.efoy_voltage.insert(i, Vec::new());
-            timeseries.efoy_fuel_percentage.insert(i, Vec::new());
-        }
+        let mut timeseries = Timeseries::new();
         for heartbeat in &heartbeats {
             efoy1.process(&heartbeat.efoy1)?;
             efoy2.process(&heartbeat.efoy2)?;
-            timeseries.datetimes.push(heartbeat.datetime.to_rfc3339());
-            timeseries.states_of_charge
-                .get_mut(&1)
-                .unwrap()
-                .push(heartbeat.soc1);
-            timeseries.states_of_charge
-                .get_mut(&2)
-                .unwrap()
-                .push(heartbeat.soc2);
-            timeseries.efoy_current
-                .get_mut(&1)
-                .unwrap()
-                .push(heartbeat.efoy1.current);
-            timeseries.efoy_current
-                .get_mut(&2)
-                .unwrap()
-                .push(heartbeat.efoy2.current);
-            timeseries.efoy_voltage
-                .get_mut(&1)
-                .unwrap()
-                .push(heartbeat.efoy1.current);
-            timeseries.efoy_voltage
-                .get_mut(&2)
-                .unwrap()
-                .push(heartbeat.efoy2.current);
-            timeseries.efoy_fuel_percentage
-                .get_mut(&1)
-                .unwrap()
-                .push(efoy1.total_fuel_percentage());
-            timeseries.efoy_fuel_percentage
-                .get_mut(&2)
-                .unwrap()
-                .push(efoy2.total_fuel_percentage());
+            timeseries.process(&heartbeat, &efoy1, &efoy2);
         }
         let heartbeat = heartbeats.pop().unwrap();
         let batteries = vec![BatteryStatus::new(1, heartbeat.soc1),
@@ -166,5 +128,63 @@ impl EfoyStatus {
                      })
                 .collect(),
         }
+    }
+}
+
+impl Timeseries {
+    fn new() -> Timeseries {
+        let mut states_of_charge = HashMap::new();
+        let mut efoy_current = HashMap::new();
+        let mut efoy_fuel_percentage = HashMap::new();
+        let mut efoy_voltage = HashMap::new();
+        for id in 0..2 {
+            states_of_charge.insert(id + 1, Vec::new());
+            efoy_current.insert(id + 1, Vec::new());
+            efoy_fuel_percentage.insert(id + 1, Vec::new());
+            efoy_voltage.insert(id + 1, Vec::new());
+        }
+        Timeseries {
+            datetimes: Vec::new(),
+            states_of_charge: states_of_charge,
+            efoy_current: efoy_current,
+            efoy_fuel_percentage: efoy_fuel_percentage,
+            efoy_voltage: efoy_voltage,
+        }
+    }
+
+    fn process(&mut self, heartbeat: &Heartbeat, efoy1: &Efoy, efoy2: &Efoy) {
+        self.datetimes.push(heartbeat.datetime.to_rfc3339());
+        self.states_of_charge
+            .get_mut(&1)
+            .unwrap()
+            .push(heartbeat.soc1);
+        self.states_of_charge
+            .get_mut(&2)
+            .unwrap()
+            .push(heartbeat.soc2);
+        self.efoy_current
+            .get_mut(&1)
+            .unwrap()
+            .push(heartbeat.efoy1.current);
+        self.efoy_current
+            .get_mut(&2)
+            .unwrap()
+            .push(heartbeat.efoy2.current);
+        self.efoy_voltage
+            .get_mut(&1)
+            .unwrap()
+            .push(heartbeat.efoy1.current);
+        self.efoy_voltage
+            .get_mut(&2)
+            .unwrap()
+            .push(heartbeat.efoy2.current);
+        self.efoy_fuel_percentage
+            .get_mut(&1)
+            .unwrap()
+            .push(efoy1.total_fuel_percentage());
+        self.efoy_fuel_percentage
+            .get_mut(&2)
+            .unwrap()
+            .push(efoy2.total_fuel_percentage());
     }
 }

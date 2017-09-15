@@ -2,7 +2,7 @@ use Result;
 use atlas::handlers::Atlas;
 use cameras::handlers::Cameras;
 use config::Config;
-use iron::{Chain, Handler, IronResult, Request, Response};
+use iron::{Chain, Handler, IronResult, Request, Response, Url};
 use iron::headers::AccessControlAllowOrigin;
 use logger::Logger;
 use router::Router;
@@ -38,6 +38,8 @@ impl Api {
     /// ```
     pub fn new(config: Config) -> Result<Api> {
         let mut router = Router::new();
+        router.get("/", root, "root");
+
         let cameras = Cameras::from(config.cameras);
         router.get("/cameras",
                    {
@@ -88,5 +90,45 @@ impl Handler for Api {
                          iron_error.response.headers.set(AccessControlAllowOrigin::Any);
                          iron_error
                      })
+    }
+}
+
+fn root(request: &mut Request) -> IronResult<Response> {
+    use json;
+    let data = json!({
+        "cameras_url": url_for!(request, "cameras").as_ref().to_string(),
+        "camera_url": decode(url_for!(request, "camera", "name" => "{name}")),
+        "camera_images_url": decode(url_for!(request, "camera-images", "name" => "{name}")),
+        "camera_latest_image_redirect_url": decode(url_for!(request, "camera-latest-image-redirect", "name" => "{name}")),
+        "atlas_status_url": url_for!(request, "atlas-status").as_ref().to_string(),
+    });
+    json::response(data)
+}
+
+fn decode(url: Url) -> String {
+    use percent_encoding;
+    percent_encoding::percent_decode(url.as_ref().as_str().as_ref())
+        .decode_utf8_lossy()
+        .into_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iron::Headers;
+    use iron_test::{request, response};
+    use serde_json::{self, Value};
+
+    #[test]
+    fn root() {
+        let api = Api::new(Config::new()).unwrap();
+        let response = request::get("http://localhost:3000/", Headers::new(), &api).unwrap();
+        let json: Value = serde_json::from_str(&response::extract_body_to_string(response))
+            .unwrap();
+        assert_eq!("http://localhost:3000/cameras", json["cameras_url"]);
+        assert_eq!("http://localhost:3000/cameras/{name}", json["camera_url"]);
+        assert_eq!("http://localhost:3000/cameras/{name}/images", json["camera_images_url"]);
+        assert_eq!("http://localhost:3000/cameras/{name}/images/latest/redirect", json["camera_latest_image_redirect_url"]);
+        assert_eq!("http://localhost:3000/atlas/status", json["atlas_status_url"]);
     }
 }

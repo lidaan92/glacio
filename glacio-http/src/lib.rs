@@ -14,11 +14,13 @@ extern crate iron;
 extern crate iron_test;
 extern crate logger;
 extern crate params;
+extern crate percent_encoding;
 #[macro_use]
 extern crate router;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 extern crate toml;
 

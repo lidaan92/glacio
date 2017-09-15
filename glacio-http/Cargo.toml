@@ -8,6 +8,7 @@ glacio = { path = "../glacio" }
 iron = "0.5"
 logger = "0.3"
 params = "0.6"
+percent-encoding = "1.0"
 router = "0.5"
 serde = "1.0"
 serde_derive = "1.0"

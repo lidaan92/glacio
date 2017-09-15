@@ -43,10 +43,10 @@ pub struct Heartbeat {
     pub scan_start: DateTime<Utc>,
     /// Information about the last completed scan.
     pub scan_stop: ScanStop,
-    /// Information about efoy system 1.
-    pub efoy1: efoy::Heartbeat,
-    /// Information about efoy system 2.
-    pub efoy2: efoy::Heartbeat,
+    /// Information about the efoy systems.
+    ///
+    /// Again, the id is a 1-indexed number.
+    pub efoys: BTreeMap<u8, efoy::Heartbeat>,
     /// Are the Riegl systems enabled?
     ///
     /// There's a hardware switch that disables the housing and scanner. The switch is controlled
@@ -97,17 +97,19 @@ impl Heartbeat {
             let mut batteries = BTreeMap::new();
             batteries.insert(1, parse_name_from_captures!(captures, "soc1"));
             batteries.insert(2, parse_name_from_captures!(captures, "soc2"));
+            let mut efoys = BTreeMap::new();
+            efoys.insert(1, parse_name_from_captures!(captures, "efoy1"));
+            efoys.insert(2, parse_name_from_captures!(captures, "efoy2"));
             Ok(Heartbeat {
                    version: parse_name_from_captures!(captures, "version"),
                    datetime: datetime,
                    batteries: batteries,
+                   efoys: efoys,
                    scanner_power_on: parse_name_from_captures!(captures, "scanner_power_on"),
                    scan_start: sutron::parse_datetime::<Error>(captures.name("scan_start")
                                                                    .unwrap()
                                                                    .as_str())?,
                    scan_stop: parse_name_from_captures!(captures, "scan_stop"),
-                   efoy1: parse_name_from_captures!(captures, "efoy1"),
-                   efoy2: parse_name_from_captures!(captures, "efoy2"),
                    are_riegl_systems_on: captures.name("riegl_switch").unwrap().as_str() == "on",
                })
         } else {
@@ -267,14 +269,14 @@ mod tests {
         assert_eq!(-0.340, scan_stop.roll);
         assert_eq!(-0.198, scan_stop.pitch);
 
-        let efoy1 = heartbeat.efoy1;
+        let efoy1 = &heartbeat.efoys[&1];
         assert_eq!(efoy::State::AutoOff, efoy1.state);
         assert_eq!("1.1", efoy1.cartridge);
         assert_eq!(3.741, efoy1.consumed);
         assert_eq!(26.63, efoy1.voltage);
         assert_eq!(-0.03, efoy1.current);
 
-        let efoy2 = heartbeat.efoy2;
+        let efoy2 = &heartbeat.efoys[&2];
         assert_eq!(efoy::State::AutoOff, efoy2.state);
         assert_eq!("1.1", efoy2.cartridge);
         assert_eq!(3.687, efoy2.consumed);

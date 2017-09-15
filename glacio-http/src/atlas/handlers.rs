@@ -71,5 +71,13 @@ mod tests {
         assert_eq!(0.049, status["efoys"][1]["active_cartridge_consumed"]);
         assert_eq!(26.86, status["efoys"][1]["voltage"]);
         assert_eq!(-0.04, status["efoys"][1]["current"]);
+
+        assert_eq!("2017-08-01T00:00:55+00:00",
+                   status["timeseries"]["datetimes"][0]);
+        assert_eq!(94.208, status["timeseries"]["states_of_charge"]["1"][0]);
+        assert_eq!(-0.03, status["timeseries"]["efoy_current"]["1"][0]);
+        assert_eq!(26.63, status["timeseries"]["efoy_voltage"]["1"][0]);
+        assert_eq!(76.61875,
+                   status["timeseries"]["efoy_fuel_percentage"]["1"][0]);
     }
 }

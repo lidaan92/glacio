@@ -1,7 +1,7 @@
 use Result;
 use atlas::Config;
 use glacio::atlas::{Efoy, Heartbeat, efoy};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 /// An ATLAS status report.
 #[derive(Debug, Serialize)]
@@ -64,13 +64,15 @@ pub struct Timeseries {
     /// The list of dates and times for this timeseries.
     pub datetimes: Vec<String>,
     /// A map from battery id to a list of states of charge for that battery.
-    pub states_of_charge: HashMap<u8, Vec<f32>>,
+    pub states_of_charge: BTreeMap<u8, Vec<f32>>,
     /// A map from efoy id to current level.
-    pub efoy_current: HashMap<u8, Vec<f32>>,
+    pub efoy_current: BTreeMap<u8, Vec<f32>>,
     /// A map from efoy id to voltage level.
-    pub efoy_voltage: HashMap<u8, Vec<f32>>,
+    pub efoy_voltage: BTreeMap<u8, Vec<f32>>,
     /// A map from efoy id to fuel level.
-    pub efoy_fuel_percentage: HashMap<u8, Vec<f32>>,
+    pub efoy_fuel_percentage: BTreeMap<u8, Vec<f32>>,
+    #[serde(skip)]
+    efoys: BTreeMap<u8, Efoy>,
 }
 
 impl Status {
@@ -78,25 +80,19 @@ impl Status {
     pub fn new(config: &Config) -> Result<Status> {
         let mut heartbeats = config.heartbeats()?;
         heartbeats.sort();
-        let mut efoy1 = config.efoy()?;
-        let mut efoy2 = config.efoy()?;
-        let mut timeseries = Timeseries::new(&heartbeats[0]);
+        let mut timeseries = Timeseries::new(config, &heartbeats[0])?;
         for heartbeat in &heartbeats {
-            efoy1.process(&heartbeat.efoy1)?;
-            efoy2.process(&heartbeat.efoy2)?;
-            timeseries.process(&heartbeat, &efoy1, &efoy2);
+            timeseries.process(&heartbeat)?;
         }
         let heartbeat = heartbeats.pop().unwrap();
         let batteries = heartbeat.batteries
             .iter()
             .map(|(&i, battery)| BatteryStatus::new(i, battery.state_of_charge))
             .collect();
-        let efoys = vec![EfoyStatus::new(1, &efoy1, &heartbeat.efoy1),
-                         EfoyStatus::new(2, &efoy2, &heartbeat.efoy2)];
         Ok(Status {
                last_heartbeat_received: heartbeat.datetime.to_rfc3339(),
                batteries: batteries,
-               efoys: efoys,
+               efoys: timeseries.efoys(&heartbeat),
                timeseries: timeseries,
                are_riegl_systems_on: heartbeat.are_riegl_systems_on,
            })
@@ -134,56 +130,63 @@ impl EfoyStatus {
 }
 
 impl Timeseries {
-    fn new(heartbeat: &Heartbeat) -> Timeseries {
+    fn new(config: &Config, heartbeat: &Heartbeat) -> Result<Timeseries> {
         let states_of_charge = heartbeat.batteries
-            .iter()
-            .map(|(&i, _)| (i, Vec::new()))
+            .keys()
+            .map(|&i| (i, Vec::new()))
             .collect();
-        let mut efoy_current = HashMap::new();
-        let mut efoy_fuel_percentage = HashMap::new();
-        let mut efoy_voltage = HashMap::new();
-        for id in 0..2 {
-            efoy_current.insert(id + 1, Vec::new());
-            efoy_fuel_percentage.insert(id + 1, Vec::new());
-            efoy_voltage.insert(id + 1, Vec::new());
+        let mut efoy_current = BTreeMap::new();
+        let mut efoy_fuel_percentage = BTreeMap::new();
+        let mut efoy_voltage = BTreeMap::new();
+        let mut efoys = BTreeMap::new();
+        for &i in heartbeat.efoys.keys() {
+            efoy_current.insert(i, Vec::new());
+            efoy_fuel_percentage.insert(i, Vec::new());
+            efoy_voltage.insert(i, Vec::new());
+            efoys.insert(i, config.efoy()?);
         }
-        Timeseries {
-            datetimes: Vec::new(),
-            states_of_charge: states_of_charge,
-            efoy_current: efoy_current,
-            efoy_fuel_percentage: efoy_fuel_percentage,
-            efoy_voltage: efoy_voltage,
-        }
+
+        Ok(Timeseries {
+               datetimes: Vec::new(),
+               states_of_charge: states_of_charge,
+               efoy_current: efoy_current,
+               efoy_fuel_percentage: efoy_fuel_percentage,
+               efoy_voltage: efoy_voltage,
+               efoys: efoys,
+           })
     }
 
-    fn process(&mut self, heartbeat: &Heartbeat, efoy1: &Efoy, efoy2: &Efoy) {
+    fn process(&mut self, heartbeat: &Heartbeat) -> Result<()> {
         self.datetimes.push(heartbeat.datetime.to_rfc3339());
-        for (i, states_of_charge) in self.states_of_charge.iter_mut() {
-            states_of_charge.push(heartbeat.batteries[i].state_of_charge);
+        for (i, battery) in &heartbeat.batteries {
+            self.states_of_charge
+                .get_mut(i)
+                .unwrap()
+                .push(battery.state_of_charge);
         }
-        self.efoy_current
-            .get_mut(&1)
-            .unwrap()
-            .push(heartbeat.efoy1.current);
-        self.efoy_current
-            .get_mut(&2)
-            .unwrap()
-            .push(heartbeat.efoy2.current);
-        self.efoy_voltage
-            .get_mut(&1)
-            .unwrap()
-            .push(heartbeat.efoy1.current);
-        self.efoy_voltage
-            .get_mut(&2)
-            .unwrap()
-            .push(heartbeat.efoy2.current);
-        self.efoy_fuel_percentage
-            .get_mut(&1)
-            .unwrap()
-            .push(efoy1.total_fuel_percentage());
-        self.efoy_fuel_percentage
-            .get_mut(&2)
-            .unwrap()
-            .push(efoy2.total_fuel_percentage());
+        for (i, heartbeat) in &heartbeat.efoys {
+            self.efoy_current
+                .get_mut(i)
+                .unwrap()
+                .push(heartbeat.current);
+            self.efoy_voltage
+                .get_mut(i)
+                .unwrap()
+                .push(heartbeat.voltage);
+            let mut efoy = self.efoys.get_mut(i).unwrap();
+            efoy.process(heartbeat)?;
+            self.efoy_fuel_percentage
+                .get_mut(i)
+                .unwrap()
+                .push(efoy.total_fuel_percentage());
+        }
+        Ok(())
+    }
+
+    fn efoys(&self, heartbeat: &Heartbeat) -> Vec<EfoyStatus> {
+        self.efoys
+            .iter()
+            .map(|(&i, efoy)| EfoyStatus::new(i, efoy, &heartbeat.efoys[&i]))
+            .collect()
     }
 }

@@ -1,6 +1,6 @@
 use atlas::{Error, Result};
 use atlas::efoy;
-use atlas::scanner::ScanStop;
+use atlas::scanner::{ScanStop, ScannerPowerOn};
 use chrono::{DateTime, Utc};
 use regex::Regex;
 use sbd::mo::Message;
@@ -11,7 +11,7 @@ use std::vec::IntoIter;
 lazy_static! {
     static ref RE: Regex = Regex::new(r"(?x)^
         ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
-        .*\r\n # scanner on
+        (?P<scanner_power_on>.*)\r\n
         .*\r\n # external temp, pressure, rh
         (?P<scan_start>.*)\r\n
         (?P<scan_stop>.*)\r\n
@@ -37,6 +37,8 @@ pub struct Heartbeat {
     pub soc1: f32,
     /// The state of charge of the second battery.
     pub soc2: f32,
+    /// Information provided when the scanner powers on.
+    pub scanner_power_on: ScannerPowerOn,
     /// The datetime of the last scan start.
     pub scan_start: DateTime<Utc>,
     /// Information about the last completed scan.
@@ -93,6 +95,7 @@ impl Heartbeat {
             Ok(Heartbeat {
                    version: parse_name_from_captures!(captures, "version"),
                    datetime: datetime,
+                   scanner_power_on: parse_name_from_captures!(captures, "scanner_power_on"),
                    scan_start: sutron::parse_datetime::<Error>(captures.name("scan_start")
                                                                    .unwrap()
                                                                    .as_str())?,

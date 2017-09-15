@@ -74,6 +74,8 @@ pub enum Error {
     ParseInt(ParseIntError),
     /// Wrapper around `sbd::Error`.
     Sbd(sbd::Error),
+    /// The scanner power on text is invalid.
+    ScannerPowerOnFormat(String),
     /// The stop scan text is invalid.
     StopScanFormat(String),
     /// Wrapper around `glacio::sutron::message::Error`.
@@ -127,6 +129,7 @@ impl error::Error for Error {
             Error::ParseFloat(ref err) => err.description(),
             Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
+            Error::ScannerPowerOnFormat(_) => "the format of the scanner power on message is invalid",
             Error::StopScanFormat(_) => "the format of the stop scan message is invalid",
             Error::SutronMessage(ref err) => err.description(),
             Error::UnknownEfoyState(_) => "the efoy state string is not recognized",
@@ -165,6 +168,9 @@ impl Display for Error {
             Error::ParseFloat(ref err) => err.fmt(f),
             Error::ParseInt(ref err) => err.fmt(f),
             Error::Sbd(ref err) => err.fmt(f),
+            Error::ScannerPowerOnFormat(ref s) => {
+                write!(f, "invalid scanner power on format: {}", s)
+            }
             Error::StopScanFormat(ref s) => write!(f, "invalid stop scan format: {}", s),
             Error::SutronMessage(ref err) => err.fmt(f),
             Error::UnknownEfoyState(ref state) => write!(f, "efoy state {} not recognized", state),

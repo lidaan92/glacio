@@ -4,7 +4,7 @@
 //! via RiSCRIPT. The scanner logs messages via HTTP on the data logger, and these messages are
 //! used to populate the scanner information in the heartbeat messages.
 
-use {Error, Result};
+use atlas::{Error, Result};
 use chrono::{DateTime, Utc};
 use regex::Regex;
 use std::str::FromStr;
@@ -54,22 +54,24 @@ pub struct ScanStop {
 impl FromStr for ScanStop {
     type Err = Error;
     fn from_str(s: &str) -> Result<ScanStop> {
-        use {sutron, utils};
+        use sutron;
 
         if let Some(ref captures) = SCAN_STOP_REGEX.captures(s) {
             Ok(ScanStop {
-                   datetime: sutron::parse_datetime(captures.name("datetime").unwrap().as_str())?,
-                   num_points: utils::parse_capture(captures, "num_points")?,
-                   range_min: utils::parse_capture(captures, "range_min")?,
-                   range_max: utils::parse_capture(captures, "range_max")?,
-                   file_size: utils::parse_capture(captures, "file_size")?,
-                   amplitude_min: utils::parse_capture(captures, "amplitude_min")?,
-                   amplitude_max: utils::parse_capture(captures, "amplitude_max")?,
-                   roll: utils::parse_capture(captures, "roll")?,
-                   pitch: utils::parse_capture(captures, "pitch")?,
+                   datetime: sutron::parse_datetime::<Error>(captures.name("datetime")
+                                                                 .unwrap()
+                                                                 .as_str())?,
+                   num_points: parse_name_from_captures!(captures, "num_points"),
+                   range_min: parse_name_from_captures!(captures, "range_min"),
+                   range_max: parse_name_from_captures!(captures, "range_max"),
+                   file_size: parse_name_from_captures!(captures, "file_size"),
+                   amplitude_min: parse_name_from_captures!(captures, "amplitude_min"),
+                   amplitude_max: parse_name_from_captures!(captures, "amplitude_max"),
+                   roll: parse_name_from_captures!(captures, "roll"),
+                   pitch: parse_name_from_captures!(captures, "pitch"),
                })
         } else {
-            return Err(Error::Heartbeat(format!("Unable to parse stop scan: {}", s)));
+            return Err(Error::StopScanFormat(s.to_string()));
         }
     }
 }

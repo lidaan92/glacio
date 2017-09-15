@@ -23,41 +23,32 @@ extern crate regex;
 extern crate sbd;
 extern crate url;
 
+#[macro_use]
+mod macros;
+
 pub mod atlas;
 pub mod camera;
 pub mod sutron;
-
-mod utils;
 
 pub use camera::{Camera, Image};
 
 /// Our custom error enum.
 #[derive(Debug)]
 pub enum Error {
+    /// Wrapper around `glacio::atlas::Error`.
+    Atlas(atlas::Error),
     /// Wrapper around `chrono::ParseError`.
     ChronoParse(chrono::ParseError),
-    /// An EFOY already has a cartridge of that name.
-    DuplicateEfoyCartridge(String),
-    /// The message was unable to be converted into a ATLAS heartbeat.
-    Heartbeat(String),
     /// The image filename was not in the proper format.
     ImageFilename(String),
-    /// Problem reconstructing a Sutron interleaved message.
-    ///
-    /// Interleaved messages are used to send long messages over (byte-limited) Iridium SBD.
-    InterleavedMessage(String),
     /// Wrapper around `std::io::Error`.
     Io(std::io::Error),
     /// Wrapper around `std::num::ParseFloatError`.
     ParseFloat(std::num::ParseFloatError),
     /// Wrapper around `std::num::ParseIntError`.
     ParseInt(std::num::ParseIntError),
-    /// Wrapper around `sbd::Error`.
-    Sbd(sbd::Error),
     /// Wrapper around `std::path::StripPrefixError`.
     StripPrefix(std::path::StripPrefixError),
-    /// Wrapper around `glacio::sutron::message::Error`.
-    SutronMessage(sutron::message::Error),
     /// Wrapper around `url::ParseError`.
     UrlParse(url::ParseError),
 }
@@ -92,51 +83,40 @@ impl From<chrono::ParseError> for Error {
     }
 }
 
-impl From<sbd::Error> for Error {
-    fn from(err: sbd::Error) -> Error {
-        Error::Sbd(err)
-    }
-}
-
 impl From<url::ParseError> for Error {
     fn from(err: url::ParseError) -> Error {
         Error::UrlParse(err)
     }
 }
 
-impl From<sutron::message::Error> for Error {
-    fn from(err: sutron::message::Error) -> Error {
-        Error::SutronMessage(err)
+impl From<atlas::Error> for Error {
+    fn from(err: atlas::Error) -> Error {
+        Error::Atlas(err)
     }
 }
 
 impl std::error::Error for Error {
     fn description(&self) -> &str {
         match *self {
+            Error::Atlas(ref err) => err.description(),
             Error::ChronoParse(ref err) => err.description(),
-            Error::DuplicateEfoyCartridge(_) => "duplicate efoy cartridge",
-            Error::Heartbeat(_) => "error parsing heartbeat",
             Error::ImageFilename(_) => "invalid image filename",
-            Error::InterleavedMessage(_) => "problem reconstructing an interleaved message",
             Error::Io(ref err) => err.description(),
             Error::ParseFloat(ref err) => err.description(),
             Error::ParseInt(ref err) => err.description(),
-            Error::Sbd(ref err) => err.description(),
             Error::StripPrefix(ref err) => err.description(),
-            Error::SutronMessage(ref err) => err.description(),
             Error::UrlParse(ref err) => err.description(),
         }
     }
 
     fn cause(&self) -> Option<&std::error::Error> {
         match *self {
+            Error::Atlas(ref err) => Some(err),
             Error::ChronoParse(ref err) => Some(err),
             Error::Io(ref err) => Some(err),
             Error::ParseFloat(ref err) => Some(err),
             Error::ParseInt(ref err) => Some(err),
-            Error::Sbd(ref err) => Some(err),
             Error::StripPrefix(ref err) => Some(err),
-            Error::SutronMessage(ref err) => Some(err),
             Error::UrlParse(ref err) => Some(err),
             _ => None,
         }
@@ -146,19 +126,13 @@ impl std::error::Error for Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
+            Error::Atlas(ref err) => err.fmt(f),
             Error::ChronoParse(ref err) => err.fmt(f),
-            Error::DuplicateEfoyCartridge(ref name) => {
-                write!(f, "duplicate efoy cartridge: {}", name)
-            }
-            Error::Heartbeat(ref msg) => write!(f, "error parsing heartbeat: {}", msg),
             Error::ImageFilename(ref msg) => write!(f, "invalid image filename: {}", msg),
-            Error::InterleavedMessage(ref msg) => write!(f, "interleaved message error: {}", msg),
             Error::Io(ref err) => err.fmt(f),
             Error::ParseFloat(ref err) => err.fmt(f),
             Error::ParseInt(ref err) => err.fmt(f),
-            Error::Sbd(ref err) => err.fmt(f),
             Error::StripPrefix(ref err) => err.fmt(f),
-            Error::SutronMessage(ref err) => err.fmt(f),
             Error::UrlParse(ref err) => err.fmt(f),
         }
     }

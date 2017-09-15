@@ -5,13 +5,14 @@
 pub mod message;
 
 pub use self::message::Message;
-use {Error, Result};
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, ParseError, TimeZone, Utc};
 
 /// The format of Sutron datetimes.
 pub const DATETIME_FORMAT: &'static str = "%m/%d/%y %H:%M:%S";
 
 /// Parse a Sutron datetime, as a string, into a `chrono::DateTime<Utc>`.
-pub fn parse_datetime(s: &str) -> Result<DateTime<Utc>> {
-    Utc.datetime_from_str(s, DATETIME_FORMAT).map_err(Error::from)
+pub fn parse_datetime<E>(s: &str) -> Result<DateTime<Utc>, E>
+    where E: From<ParseError>
+{
+    Utc.datetime_from_str(s, DATETIME_FORMAT).map_err(E::from)
 }

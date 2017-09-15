@@ -1,4 +1,4 @@
-use {Error, Result};
+use atlas::{Error, Result};
 use atlas::efoy;
 use atlas::scanner::ScanStop;
 use chrono::{DateTime, Utc};
@@ -7,6 +7,21 @@ use sbd::mo::Message;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 use std::vec::IntoIter;
+
+lazy_static! {
+    static ref RE: Regex = Regex::new(r"(?x)^
+        ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
+        .*\r\n # scanner on
+        .*\r\n # external temp, pressure, rh
+        (?P<scan_start>.*)\r\n
+        (?P<scan_stop>.*)\r\n
+        .*\r\n # scan skip
+        .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
+        (?P<efoy1>.*)\r\n # efoy1
+        (?P<efoy2>.*)\r\n # efoy2
+        (?P<riegl_switch>.*) # riegl switch
+        \z").unwrap();
+}
 
 /// Status report from the entire ATLAS system.
 ///
@@ -73,37 +88,23 @@ impl Ord for Heartbeat {
 
 impl Heartbeat {
     fn new(message: &str, datetime: DateTime<Utc>) -> Result<Heartbeat> {
-        use {sutron, utils};
-
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?x)^ATHB(?P<version>\d{2})(?P<bytes>\d+)\r\n
-                                                .*\r\n # scanner on
-                                                .*\r\n # external temp, pressure, rh
-                                                (?P<scan_start>.*)\r\n
-                                                (?P<scan_stop>.*)\r\n
-                                                .*\r\n # scan skip
-                                                .*,(?P<soc1>\d+\.\d+),(?P<soc2>\d+\.\d+)\r\n
-                                                (?P<efoy1>.*)\r\n # efoy1
-                                                (?P<efoy2>.*)\r\n # efoy2
-                                                (?P<riegl_switch>.*) # riegl switch
-                                                \z").unwrap();
-        }
+        use sutron;
         if let Some(ref captures) = RE.captures(message) {
             Ok(Heartbeat {
-                   version: utils::parse_capture(captures, "version")?,
+                   version: parse_name_from_captures!(captures, "version"),
                    datetime: datetime,
-                   scan_start: sutron::parse_datetime(captures.name("scan_start")
-                                                          .unwrap()
-                                                          .as_str())?,
-                   scan_stop: utils::parse_capture(captures, "scan_stop")?,
-                   soc1: utils::parse_capture(captures, "soc1")?,
-                   soc2: utils::parse_capture(captures, "soc2")?,
-                   efoy1: utils::parse_capture(captures, "efoy1")?,
-                   efoy2: utils::parse_capture(captures, "efoy2")?,
+                   scan_start: sutron::parse_datetime::<Error>(captures.name("scan_start")
+                                                                   .unwrap()
+                                                                   .as_str())?,
+                   scan_stop: parse_name_from_captures!(captures, "scan_stop"),
+                   soc1: parse_name_from_captures!(captures, "soc1"),
+                   soc2: parse_name_from_captures!(captures, "soc2"),
+                   efoy1: parse_name_from_captures!(captures, "efoy1"),
+                   efoy2: parse_name_from_captures!(captures, "efoy2"),
                    are_riegl_systems_on: captures.name("riegl_switch").unwrap().as_str() == "on",
                })
         } else {
-            Err(Error::Heartbeat("Unable to parse heartbeat".to_string()))
+            Err(Error::HeartbeatFormat(message.to_string()))
         }
     }
 }

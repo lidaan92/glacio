@@ -4,7 +4,7 @@
 //! the full ATLAS heartbeat messages). In order to construct the history of the EFOY systems, we
 //! need to process the full stream of heartbeats for a season.
 
-use {Error, Result};
+use atlas::{Error, Result};
 use regex::Regex;
 use std::slice::Iter;
 use std::str::FromStr;
@@ -72,20 +72,19 @@ pub struct Cartridges<'a> {
 impl FromStr for Heartbeat {
     type Err = Error;
     fn from_str(s: &str) -> Result<Heartbeat> {
-        use utils;
         if let Some(ref captures) = HEARTBEAT_REGEX.captures(s) {
             Ok(Heartbeat {
-                   state: utils::parse_capture(captures, "state")?,
+                   state: parse_name_from_captures!(captures, "state"),
                    cartridge: captures.name("cartridge")
                        .unwrap()
                        .as_str()
                        .to_string(),
-                   consumed: utils::parse_capture(captures, "consumed")?,
-                   voltage: utils::parse_capture(captures, "voltage")?,
-                   current: utils::parse_capture(captures, "current")?,
+                   consumed: parse_name_from_captures!(captures, "consumed"),
+                   voltage: parse_name_from_captures!(captures, "voltage"),
+                   current: parse_name_from_captures!(captures, "current"),
                })
         } else {
-            Err(Error::Heartbeat(format!("Unable to parse efoy: {}", s)))
+            Err(Error::EfoyHeartbeatFormat(s.to_string()))
         }
     }
 }
@@ -113,7 +112,7 @@ impl FromStr for State {
             "auto off" => Ok(State::AutoOff),
             "auto on" => Ok(State::AutoOn),
             "freeze protection" => Ok(State::FreezeProtection),
-            _ => Err(Error::Heartbeat(format!("Unknown efoy state: {}", s))),
+            _ => Err(Error::UnknownEfoyState(s.to_string())),
         }
     }
 }
@@ -255,12 +254,10 @@ impl Efoy {
     pub fn process(&mut self, heartbeat: &Heartbeat) -> Result<()> {
         if let Some(cartridge) = self.cartridge(&heartbeat.cartridge) {
             if cartridge.emptied {
-                return Err(Error::Heartbeat(format!("Cartridge {} has already been marked as emptied",
-                                                    cartridge.name)));
+                return Err(Error::EmptyCartridge(cartridge.name.clone()));
             }
         } else {
-            return Err(Error::Heartbeat(format!("Invalid cartridge name: {}",
-                                                heartbeat.cartridge)));
+            return Err(Error::CartridgeName(heartbeat.cartridge.to_string()));
         }
         for cartridge in self.cartridges.iter_mut() {
             if cartridge.name == heartbeat.cartridge {

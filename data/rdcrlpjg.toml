@@ -5,19 +5,19 @@ versions = [3]
 
 [[atlas.efoy.cartridges]]
 name = "1.1"
-capacity = 8.0
+capacity = 28.0
 
 [[atlas.efoy.cartridges]]
 name = "1.2"
-capacity = 8.0
+capacity = 28.0
 
 [[atlas.efoy.cartridges]]
 name = "2.1"
-capacity = 8.0
+capacity = 28.0
 
 [[atlas.efoy.cartridges]]
 name = "2.2"
-capacity = 8.0
+capacity = 28.0
 
 [cameras]
 document_root = "/Users/rdcrlpjg/iridiumcam/StarDot"

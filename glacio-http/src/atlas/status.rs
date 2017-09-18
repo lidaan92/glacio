@@ -73,6 +73,8 @@ pub struct Timeseries {
     pub efoy_voltage: BTreeMap<u8, Vec<f32>>,
     /// A map from efoy id to fuel level.
     pub efoy_fuel_percentage: BTreeMap<u8, Vec<f32>>,
+    /// What is the EFOY state?
+    pub efoy_state: BTreeMap<u8, Vec<String>>,
     #[serde(skip)]
     efoys: BTreeMap<u8, Efoy>,
 }
@@ -148,11 +150,13 @@ impl Timeseries {
         let mut efoy_current = BTreeMap::new();
         let mut efoy_fuel_percentage = BTreeMap::new();
         let mut efoy_voltage = BTreeMap::new();
+        let mut efoy_state = BTreeMap::new();
         let mut efoys = BTreeMap::new();
         for &i in heartbeat.efoys.keys() {
             efoy_current.insert(i, Vec::new());
             efoy_fuel_percentage.insert(i, Vec::new());
             efoy_voltage.insert(i, Vec::new());
+            efoy_state.insert(i, Vec::new());
             efoys.insert(i, config.efoy()?);
         }
 
@@ -162,6 +166,7 @@ impl Timeseries {
                efoy_current: efoy_current,
                efoy_fuel_percentage: efoy_fuel_percentage,
                efoy_voltage: efoy_voltage,
+               efoy_state: efoy_state,
                efoys: efoys,
            })
     }
@@ -183,6 +188,10 @@ impl Timeseries {
                 .get_mut(i)
                 .unwrap()
                 .push(heartbeat.voltage);
+            self.efoy_state
+                .get_mut(i)
+                .unwrap()
+                .push(String::from(heartbeat.state));
             let mut efoy = self.efoys.get_mut(i).unwrap();
             efoy.process(heartbeat)?;
             self.efoy_fuel_percentage

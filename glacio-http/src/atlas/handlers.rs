@@ -81,5 +81,6 @@ mod tests {
         assert_eq!(26.63, status["timeseries"]["efoy_voltage"]["1"][0]);
         assert_eq!(76.61875,
                    status["timeseries"]["efoy_fuel_percentage"]["1"][0]);
+        assert_eq!("auto off", status["timeseries"]["efoy_state"]["1"][0]);
     }
 }

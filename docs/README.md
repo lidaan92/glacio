@@ -222,7 +222,10 @@ GET /atlas/status
       "2": [
         97.2
       ]
-    }
+    },
+    "is_riegl_switch_on": [
+      true
+    ]
   }
 }
 ```

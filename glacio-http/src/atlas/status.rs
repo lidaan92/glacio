@@ -75,6 +75,8 @@ pub struct Timeseries {
     pub efoy_fuel_percentage: BTreeMap<u8, Vec<f32>>,
     /// What is the EFOY state?
     pub efoy_state: BTreeMap<u8, Vec<String>>,
+    /// Is the Riegl switch on?
+    pub is_riegl_switch_on: Vec<bool>,
     #[serde(skip)]
     efoys: BTreeMap<u8, Efoy>,
 }
@@ -167,6 +169,7 @@ impl Timeseries {
                efoy_fuel_percentage: efoy_fuel_percentage,
                efoy_voltage: efoy_voltage,
                efoy_state: efoy_state,
+               is_riegl_switch_on: Vec::new(),
                efoys: efoys,
            })
     }
@@ -199,6 +202,7 @@ impl Timeseries {
                 .unwrap()
                 .push(efoy.total_fuel_percentage());
         }
+        self.is_riegl_switch_on.push(heartbeat.is_riegl_switch_on);
         Ok(())
     }
 

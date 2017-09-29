@@ -17,7 +17,7 @@ pub struct Status {
     /// Timeseries information, used to provide historical context.
     pub timeseries: Timeseries,
     /// Are the Riegl systems powered?
-    pub are_riegl_systems_on: bool,
+    pub is_riegl_switch_on: bool,
 }
 
 /// The status of one of the battery systems.
@@ -105,7 +105,7 @@ impl Status {
                batteries: batteries,
                efoys: timeseries.efoys(&heartbeat),
                timeseries: timeseries,
-               are_riegl_systems_on: heartbeat.are_riegl_systems_on,
+               is_riegl_switch_on: heartbeat.is_riegl_switch_on,
                last_scan: LastScan::new(&heartbeat),
            })
     }

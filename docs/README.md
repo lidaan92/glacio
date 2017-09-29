@@ -186,7 +186,7 @@ GET /atlas/status
       ]
     }
   ],
-  "are_riegl_systems_on": true,
+  "is_riegl_switch_on": true,
   "timeseries": {
     "datetimes": [
       "2017-07-17T16:03:25+00:00"

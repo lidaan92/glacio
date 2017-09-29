@@ -47,11 +47,11 @@ pub struct Heartbeat {
     ///
     /// Again, the id is a 1-indexed number.
     pub efoys: BTreeMap<u8, efoy::Heartbeat>,
-    /// Are the Riegl systems enabled?
+    /// Is the Riegl switch enabled?
     ///
     /// There's a hardware switch that disables the housing and scanner. The switch is controlled
     /// by the data logger, which flips the switch when the state of charges get too low.
-    pub are_riegl_systems_on: bool,
+    pub is_riegl_switch_on: bool,
 }
 
 /// Structure for retrieving ATLAS heartbeats from SBD messages.
@@ -110,7 +110,7 @@ impl Heartbeat {
                                                                    .unwrap()
                                                                    .as_str())?,
                    scan_stop: parse_name_from_captures!(captures, "scan_stop"),
-                   are_riegl_systems_on: captures.name("riegl_switch").unwrap().as_str() == "on",
+                   is_riegl_switch_on: captures.name("riegl_switch").unwrap().as_str() == "on",
                })
         } else {
             Err(Error::HeartbeatFormat(message.to_string()))
@@ -256,7 +256,7 @@ mod tests {
         assert_eq!(94.947, heartbeat.batteries[&2].state_of_charge);
         assert_eq!(Utc.ymd(2017, 7, 31).and_hms(18, 1, 52),
                    heartbeat.scan_start);
-        assert!(heartbeat.are_riegl_systems_on);
+        assert!(heartbeat.is_riegl_switch_on);
 
         let scan_stop = heartbeat.scan_stop;
         assert_eq!(Utc.ymd(2017, 7, 31).and_hms(18, 40, 56), scan_stop.datetime);

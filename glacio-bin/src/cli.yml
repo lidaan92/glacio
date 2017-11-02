@@ -1,0 +1,21 @@
+name: glacio
+author: Pete Gadomski <pete@gadom.ski>
+subcommands:
+    - api:
+        about: Start the glacio api.
+        args:
+            - CONFIG:
+                help: The configuration toml file.
+                required: true
+                index: 1
+            - ADDR:
+                help: The address on which to start the server.
+                required: true
+                index: 2
+    - heartbeats:
+        about: Print all ATLAS heartbeats.
+        args:
+            - CONFIG:
+                help: The configuration toml file.
+                required: true
+                index: 1

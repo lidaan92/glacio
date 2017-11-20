@@ -130,9 +130,11 @@ impl Display for Error {
         match *self {
             Error::ChronoParse(ref err) => err.fmt(f),
             Error::FileStemTooShort(ref file_stem) => {
-                write!(f,
-                       "file stem is too short for datetime parsing: {}",
-                       file_stem)
+                write!(
+                    f,
+                    "file stem is too short for datetime parsing: {}",
+                    file_stem
+                )
             }
             Error::Io(ref err) => err.fmt(f),
             Error::NoFileStem(ref path) => write!(f, "no file stem for path: {}", path.display()),
@@ -158,9 +160,9 @@ impl Camera {
     /// ```
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Camera> {
         Ok(Camera {
-               path: path.as_ref().canonicalize()?,
-               extensions: DEFAULT_EXTENSIONS.iter().map(|&s| s.into()).collect(),
-           })
+            path: path.as_ref().canonicalize()?,
+            extensions: DEFAULT_EXTENSIONS.iter().map(|&s| s.into()).collect(),
+        })
     }
 
     /// Returns an iterator over this camera's images.
@@ -176,11 +178,11 @@ impl Camera {
         self.path
             .read_dir()
             .map(|read_dir| {
-                     Images {
-                         read_dir: read_dir,
-                         extensions: self.extensions.clone(),
-                     }
-                 })
+                Images {
+                    read_dir: read_dir,
+                    extensions: self.extensions.clone(),
+                }
+            })
             .map_err(Error::from)
     }
 
@@ -265,7 +267,12 @@ impl Image {
                 let (_, s) = file_stem.split_at(file_stem.len() - 15);
                 Utc.datetime_from_str(s, "%Y%m%d_%H%M%S")
                     .map_err(Error::from)
-                    .map(|datetime| Image { datetime: datetime, path: path.clone() })
+                    .map(|datetime| {
+                        Image {
+                            datetime: datetime,
+                            path: path.clone(),
+                        }
+                    })
             }
         } else {
             Err(Error::NoFileStem(path.clone()))
@@ -328,9 +335,9 @@ impl Server {
     /// ```
     pub fn new<P: AsRef<Path>>(document_root: P) -> Result<Server> {
         Ok(Server {
-               document_root: document_root.as_ref().canonicalize()?,
-               base_url: Url::parse(DEFAULT_SERVER_BASE_URL).unwrap(),
-           })
+            document_root: document_root.as_ref().canonicalize()?,
+            base_url: Url::parse(DEFAULT_SERVER_BASE_URL).unwrap(),
+        })
     }
 
     /// Returns the url for the provided image.
@@ -347,7 +354,9 @@ impl Server {
     /// ```
     pub fn url_for(&self, image: &Image) -> Result<Url> {
         let input = image.path().strip_prefix(&self.document_root)?;
-        self.base_url.join(&input.to_string_lossy()).map_err(Error::from)
+        self.base_url.join(&input.to_string_lossy()).map_err(
+            Error::from,
+        )
     }
 
     /// Returns this server's document root.
@@ -390,41 +399,35 @@ mod tests {
     fn server_url() {
         let server = Server::new("data").unwrap();
         let camera = Camera::new("data/ATLAS_CAM").unwrap();
-        let image = camera.images()
-            .unwrap()
-            .next()
-            .unwrap()
-            .unwrap();
+        let image = camera.images().unwrap().next().unwrap().unwrap();
         let url = server.url_for(&image).unwrap();
-        assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
-                   url.as_str());
+        assert_eq!(
+            "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
+            url.as_str()
+        );
     }
 
     #[test]
     fn server_url_subdirectory() {
         let server = Server::new(Path::new("data").canonicalize().unwrap()).unwrap();
         let camera = Camera::new("data/HEL_BERGCAM3/StarDot1").unwrap();
-        let image = camera.images()
-            .unwrap()
-            .next()
-            .unwrap()
-            .unwrap();
+        let image = camera.images().unwrap().next().unwrap().unwrap();
         let url = server.url_for(&image).unwrap();
-        assert_eq!("http://iridiumcam.lidar.io/HEL_BERGCAM3/StarDot1/HEL_BERGCAM3_StarDot1_20170825_120000.jpg",
-                   url.as_str());
+        assert_eq!(
+            "http://iridiumcam.lidar.io/HEL_BERGCAM3/StarDot1/HEL_BERGCAM3_StarDot1_20170825_120000.jpg",
+            url.as_str()
+        );
     }
 
     #[test]
     fn server_url_mixing_absolute_and_relative() {
         let server = Server::new("data").unwrap();
         let camera = Camera::new("data/ATLAS_CAM").unwrap();
-        let image = camera.images()
-            .unwrap()
-            .next()
-            .unwrap()
-            .unwrap();
+        let image = camera.images().unwrap().next().unwrap().unwrap();
         let url = server.url_for(&image).unwrap();
-        assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
-                   url.as_str());
+        assert_eq!(
+            "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
+            url.as_str()
+        );
     }
 }

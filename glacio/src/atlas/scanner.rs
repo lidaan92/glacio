@@ -80,14 +80,14 @@ impl FromStr for ScannerPowerOn {
 
         if let Some(ref captures) = SCANNER_POWER_ON_REGEX.captures(s) {
             Ok(ScannerPowerOn {
-                   datetime: sutron::parse_datetime::<Error>(captures.name("datetime")
-                                                                 .unwrap()
-                                                                 .as_str())?,
-                   voltage: parse_name_from_captures!(captures, "voltage"),
-                   temperature: parse_name_from_captures!(captures, "temperature"),
-                   memory_internal: parse_name_from_captures!(captures, "memory_internal"),
-                   memory_external: parse_name_from_captures!(captures, "memory_external"),
-               })
+                datetime: sutron::parse_datetime::<Error>(
+                    captures.name("datetime").unwrap().as_str(),
+                )?,
+                voltage: parse_name_from_captures!(captures, "voltage"),
+                temperature: parse_name_from_captures!(captures, "temperature"),
+                memory_internal: parse_name_from_captures!(captures, "memory_internal"),
+                memory_external: parse_name_from_captures!(captures, "memory_external"),
+            })
         } else {
             Err(Error::ScannerPowerOnFormat(s.to_string()))
         }
@@ -101,18 +101,18 @@ impl FromStr for ScanStop {
 
         if let Some(ref captures) = SCAN_STOP_REGEX.captures(s) {
             Ok(ScanStop {
-                   datetime: sutron::parse_datetime::<Error>(captures.name("datetime")
-                                                                 .unwrap()
-                                                                 .as_str())?,
-                   num_points: parse_name_from_captures!(captures, "num_points"),
-                   range_min: parse_name_from_captures!(captures, "range_min"),
-                   range_max: parse_name_from_captures!(captures, "range_max"),
-                   file_size: parse_name_from_captures!(captures, "file_size"),
-                   amplitude_min: parse_name_from_captures!(captures, "amplitude_min"),
-                   amplitude_max: parse_name_from_captures!(captures, "amplitude_max"),
-                   roll: parse_name_from_captures!(captures, "roll"),
-                   pitch: parse_name_from_captures!(captures, "pitch"),
-               })
+                datetime: sutron::parse_datetime::<Error>(
+                    captures.name("datetime").unwrap().as_str(),
+                )?,
+                num_points: parse_name_from_captures!(captures, "num_points"),
+                range_min: parse_name_from_captures!(captures, "range_min"),
+                range_max: parse_name_from_captures!(captures, "range_max"),
+                file_size: parse_name_from_captures!(captures, "file_size"),
+                amplitude_min: parse_name_from_captures!(captures, "amplitude_min"),
+                amplitude_max: parse_name_from_captures!(captures, "amplitude_max"),
+                roll: parse_name_from_captures!(captures, "roll"),
+                pitch: parse_name_from_captures!(captures, "pitch"),
+            })
         } else {
             return Err(Error::StopScanFormat(s.to_string()));
         }

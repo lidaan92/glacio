@@ -74,15 +74,12 @@ impl FromStr for Heartbeat {
     fn from_str(s: &str) -> Result<Heartbeat> {
         if let Some(ref captures) = HEARTBEAT_REGEX.captures(s) {
             Ok(Heartbeat {
-                   state: parse_name_from_captures!(captures, "state"),
-                   cartridge: captures.name("cartridge")
-                       .unwrap()
-                       .as_str()
-                       .to_string(),
-                   consumed: parse_name_from_captures!(captures, "consumed"),
-                   voltage: parse_name_from_captures!(captures, "voltage"),
-                   current: parse_name_from_captures!(captures, "current"),
-               })
+                state: parse_name_from_captures!(captures, "state"),
+                cartridge: captures.name("cartridge").unwrap().as_str().to_string(),
+                consumed: parse_name_from_captures!(captures, "consumed"),
+                voltage: parse_name_from_captures!(captures, "voltage"),
+                current: parse_name_from_captures!(captures, "current"),
+            })
         } else {
             Err(Error::EfoyHeartbeatFormat(s.to_string()))
         }
@@ -156,7 +153,10 @@ impl Efoy {
     /// efoy.add_cartridge("1.1", 8.0).unwrap();
     /// ```
     pub fn add_cartridge(&mut self, name: &str, capacity: f32) -> Result<()> {
-        if self.cartridges.iter().any(|cartridge| cartridge.name == name) {
+        if self.cartridges.iter().any(
+            |cartridge| cartridge.name == name,
+        )
+        {
             return Err(Error::DuplicateEfoyCartridge(name.to_string()));
         }
         self.cartridges.push(Cartridge::new(name, capacity));
@@ -191,7 +191,9 @@ impl Efoy {
     /// assert_eq!(Some(100.0), efoy.fuel_percentage("1.1"));
     /// ```
     pub fn fuel_percentage(&self, name: &str) -> Option<f32> {
-        self.cartridge(name).map(|cartridge| cartridge.fuel_percentage())
+        self.cartridge(name).map(
+            |cartridge| cartridge.fuel_percentage(),
+        )
     }
 
     /// Returns the total fuel reamining in this EFOY.
@@ -207,10 +209,7 @@ impl Efoy {
     /// assert_eq!(16.0, efoy.total_fuel());
     /// ```
     pub fn total_fuel(&self) -> f32 {
-        self.cartridges
-            .iter()
-            .map(|c| c.fuel())
-            .sum()
+        self.cartridges.iter().map(|c| c.fuel()).sum()
     }
 
     /// Returns the total fuel in this EFOY as a percentage of full capacity.
@@ -224,10 +223,10 @@ impl Efoy {
     /// assert_eq!(100.0, efoy.total_fuel_percentage());
     /// ```
     pub fn total_fuel_percentage(&self) -> f32 {
-        let (fuel, capacity) =
-            self.cartridges.iter().fold((0., 0.), |(fuel, capacity), cartridge| {
-                (fuel + cartridge.fuel(), capacity + cartridge.capacity)
-            });
+        let (fuel, capacity) = self.cartridges.iter().fold((0., 0.), |(fuel, capacity),
+         cartridge| {
+            (fuel + cartridge.fuel(), capacity + cartridge.capacity)
+        });
         100. * fuel / capacity
     }
 
@@ -284,7 +283,9 @@ impl Efoy {
     }
 
     fn cartridge(&self, name: &str) -> Option<&Cartridge> {
-        self.cartridges.iter().find(|&cartridge| cartridge.name == name)
+        self.cartridges.iter().find(
+            |&cartridge| cartridge.name == name,
+        )
     }
 }
 
@@ -373,8 +374,10 @@ mod tests {
         efoy.process(&heartbeat).unwrap();
         assert_eq!(8.0 - 4.2, efoy.fuel("1.1").unwrap());
         assert_eq!(32.0 - 4.2, efoy.total_fuel());
-        assert_eq!(100. * (8.0 - 4.2) / 8.0,
-                   efoy.fuel_percentage("1.1").unwrap());
+        assert_eq!(
+            100. * (8.0 - 4.2) / 8.0,
+            efoy.fuel_percentage("1.1").unwrap()
+        );
         assert_eq!(100. * ((32.0 - 4.2) / 32.0), efoy.total_fuel_percentage());
 
         heartbeat.cartridge = "3.1".to_string();

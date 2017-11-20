@@ -12,7 +12,8 @@ pub const DATETIME_FORMAT: &'static str = "%m/%d/%y %H:%M:%S";
 
 /// Parse a Sutron datetime, as a string, into a `chrono::DateTime<Utc>`.
 pub fn parse_datetime<E>(s: &str) -> Result<DateTime<Utc>, E>
-    where E: From<ParseError>
+where
+    E: From<ParseError>,
 {
     Utc.datetime_from_str(s, DATETIME_FORMAT).map_err(E::from)
 }

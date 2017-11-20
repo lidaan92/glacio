@@ -123,14 +123,18 @@ impl error::Error for Error {
         match *self {
             Error::CartridgeName(_) => "invalid EFOY cartridge name",
             Error::ChronoParse(ref err) => err.description(),
-            Error::DuplicateEfoyCartridge(_) => "a cartridge with this name has already been added to this efoy",
+            Error::DuplicateEfoyCartridge(_) => {
+                "a cartridge with this name has already been added to this efoy"
+            }
             Error::EmptyCartridge(_) => "the cartridge is already empty, cannot empty it again",
             Error::EfoyHeartbeatFormat(_) => "the format of this efoy heartbeat message is invalid",
             Error::HeartbeatFormat(_) => "the format of this heartbeat message is invalid",
             Error::ParseFloat(ref err) => err.description(),
             Error::ParseInt(ref err) => err.description(),
             Error::Sbd(ref err) => err.description(),
-            Error::ScannerPowerOnFormat(_) => "the format of the scanner power on message is invalid",
+            Error::ScannerPowerOnFormat(_) => {
+                "the format of the scanner power on message is invalid"
+            }
             Error::StopScanFormat(_) => "the format of the stop scan message is invalid",
             Error::SutronMessage(ref err) => err.description(),
             Error::UnknownEfoyState(_) => "the efoy state string is not recognized",
@@ -155,14 +159,18 @@ impl Display for Error {
             Error::CartridgeName(ref name) => write!(f, "invalid EFOY cartridge name: {}", name),
             Error::ChronoParse(ref err) => err.fmt(f),
             Error::DuplicateEfoyCartridge(ref name) => {
-                write!(f,
-                       "a cartridge with name {} has already been added to this efoy",
-                       name)
+                write!(
+                    f,
+                    "a cartridge with name {} has already been added to this efoy",
+                    name
+                )
             }
             Error::EmptyCartridge(ref name) => {
-                write!(f,
-                       "efoy cartridge {} is empty, cannot be emptied again",
-                       name)
+                write!(
+                    f,
+                    "efoy cartridge {} is empty, cannot be emptied again",
+                    name
+                )
             }
             Error::EfoyHeartbeatFormat(ref s) => write!(f, "invalid efoy heartbeat format: {}", s),
             Error::HeartbeatFormat(ref s) => write!(f, "invalid heartbeat format: {}", s),

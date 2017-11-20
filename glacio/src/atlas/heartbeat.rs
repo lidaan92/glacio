@@ -101,17 +101,17 @@ impl Heartbeat {
             efoys.insert(1, parse_name_from_captures!(captures, "efoy1"));
             efoys.insert(2, parse_name_from_captures!(captures, "efoy2"));
             Ok(Heartbeat {
-                   version: parse_name_from_captures!(captures, "version"),
-                   datetime: datetime,
-                   batteries: batteries,
-                   efoys: efoys,
-                   scanner_power_on: parse_name_from_captures!(captures, "scanner_power_on"),
-                   scan_start: sutron::parse_datetime::<Error>(captures.name("scan_start")
-                                                                   .unwrap()
-                                                                   .as_str())?,
-                   scan_stop: parse_name_from_captures!(captures, "scan_stop"),
-                   is_riegl_switch_on: captures.name("riegl_switch").unwrap().as_str() == "on",
-               })
+                version: parse_name_from_captures!(captures, "version"),
+                datetime: datetime,
+                batteries: batteries,
+                efoys: efoys,
+                scanner_power_on: parse_name_from_captures!(captures, "scanner_power_on"),
+                scan_start: sutron::parse_datetime::<Error>(
+                    captures.name("scan_start").unwrap().as_str(),
+                )?,
+                scan_stop: parse_name_from_captures!(captures, "scan_stop"),
+                is_riegl_switch_on: captures.name("riegl_switch").unwrap().as_str() == "on",
+            })
         } else {
             Err(Error::HeartbeatFormat(message.to_string()))
         }
@@ -189,9 +189,9 @@ impl SbdSource {
         }
         messages.sort_by(|a, b| a.time_of_session().cmp(&b.time_of_session()));
         Ok(ReadSbd {
-               iter: messages.into_iter(),
-               versions: self.versions.clone(),
-           })
+            iter: messages.into_iter(),
+            versions: self.versions.clone(),
+        })
     }
 }
 
@@ -212,7 +212,8 @@ impl Iterator for ReadSbd {
                         match Heartbeat::new(&String::from(new_message), datetime.unwrap()) {
                             Ok(heartbeat) => {
                                 if self.versions.is_empty() ||
-                                   self.versions.contains(&heartbeat.version) {
+                                    self.versions.contains(&heartbeat.version)
+                                {
                                     return Some(Ok(heartbeat));
                                 } else {
                                     message = Message::new();
@@ -246,16 +247,15 @@ mod tests {
     #[test]
     fn heartbeat_parsing() {
         let read_sbd = SbdSource::new("data").iter().unwrap();
-        let heartbeat = read_sbd.skip(1)
-            .next()
-            .unwrap()
-            .unwrap();
+        let heartbeat = read_sbd.skip(1).next().unwrap().unwrap();
         assert_eq!(3, heartbeat.version);
         assert_eq!(Utc.ymd(2017, 8, 1).and_hms(0, 0, 55), heartbeat.datetime);
         assert_eq!(94.208, heartbeat.batteries[&1].state_of_charge);
         assert_eq!(94.947, heartbeat.batteries[&2].state_of_charge);
-        assert_eq!(Utc.ymd(2017, 7, 31).and_hms(18, 1, 52),
-                   heartbeat.scan_start);
+        assert_eq!(
+            Utc.ymd(2017, 7, 31).and_hms(18, 1, 52),
+            heartbeat.scan_start
+        );
         assert!(heartbeat.is_riegl_switch_on);
 
         let scan_stop = heartbeat.scan_stop;

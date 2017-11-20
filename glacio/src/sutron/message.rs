@@ -168,15 +168,20 @@ impl Message {
                 Ok(Message::Complete(data.to_string()))
             }
             (Message::Unstarted,
-             Packet::SelfTimedExtended { id, start_byte, total_bytes, data }) => {
+             Packet::SelfTimedExtended {
+                 id,
+                 start_byte,
+                 total_bytes,
+                 data,
+             }) => {
                 if start_byte != 0 {
                     Err(Error::NonzeroStartByte)
                 } else if let Some(total_bytes) = total_bytes {
                     Ok(Message::Incomplete {
-                           id: id,
-                           total_bytes: total_bytes,
-                           data: data,
-                       })
+                        id: id,
+                        total_bytes: total_bytes,
+                        data: data,
+                    })
                 } else {
                     Err(Error::MissingTotalBytes)
                 }
@@ -184,28 +189,37 @@ impl Message {
             (Message::Incomplete { .. }, Packet::SelfTimed(_)) => {
                 Err(Error::NonExtendedContinuationPacket)
             }
-            (Message::Incomplete { id, total_bytes, data },
-             Packet::SelfTimedExtended { id: packet_id, start_byte, data: packet_data, .. }) => {
+            (Message::Incomplete {
+                 id,
+                 total_bytes,
+                 data,
+             },
+             Packet::SelfTimedExtended {
+                 id: packet_id,
+                 start_byte,
+                 data: packet_data,
+                 ..
+             }) => {
                 if packet_id != id {
                     Err(Error::IdMismatch {
-                            packet: packet_id,
-                            message: id,
-                        })
+                        packet: packet_id,
+                        message: id,
+                    })
                 } else if start_byte != data.len() {
                     Err(Error::ByteMismatch {
-                            received: data.len(),
-                            start_byte: start_byte,
-                        })
+                        received: data.len(),
+                        start_byte: start_byte,
+                    })
                 } else {
                     let data = data + &packet_data;
                     if data.len() == total_bytes {
                         Ok(Message::Complete(data))
                     } else {
                         Ok(Message::Incomplete {
-                               id: id,
-                               total_bytes: total_bytes,
-                               data: data,
-                           })
+                            id: id,
+                            total_bytes: total_bytes,
+                            data: data,
+                        })
                     }
                 }
             }
@@ -254,21 +268,13 @@ impl FromStr for Packet {
             "1" => {
                 if let Some(ref captures) = SELF_TIMED_EXTENDED_REGEX.captures(s) {
                     Ok(Packet::SelfTimedExtended {
-                           id: captures.name("id")
-                               .unwrap()
-                               .as_str()
-                               .parse()?,
-                           start_byte: captures.name("start_byte")
-                               .unwrap()
-                               .as_str()
-                               .parse()?,
-                           total_bytes: captures.name("total_bytes")
-                               .map_or(Ok(None), |s| s.as_str().parse().map(Some))?,
-                           data: captures.name("data")
-                               .unwrap()
-                               .as_str()
-                               .to_string(),
-                       })
+                        id: captures.name("id").unwrap().as_str().parse()?,
+                        start_byte: captures.name("start_byte").unwrap().as_str().parse()?,
+                        total_bytes: captures.name("total_bytes").map_or(Ok(None), |s| {
+                            s.as_str().parse().map(Some)
+                        })?,
+                        data: captures.name("data").unwrap().as_str().to_string(),
+                    })
                 } else {
                     Err(Error::InvalidFormat(s.to_string()))
                 }
@@ -289,12 +295,20 @@ impl From<ParseIntError> for Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::ByteMismatch { .. } => "the number of bytes received does not match the start byte of the packet",
+            Error::ByteMismatch { .. } => {
+                "the number of bytes received does not match the start byte of the packet"
+            }
             Error::IdMismatch { .. } => "the id of the packet and of the message do not match",
-            Error::InvalidFormat(_) => "the packet has an invalid format (does not match the packet regular expression",
+            Error::InvalidFormat(_) => {
+                "the packet has an invalid format (does not match the packet regular expression"
+            }
             Error::MessageComplete => "tried adding a packet to an already-completed message",
-            Error::MissingTotalBytes => "the total bytes field must be populated on an initial packet",
-            Error::NonExtendedContinuationPacket => "cannot add a non-extended packet to a started (and incomplete) message",
+            Error::MissingTotalBytes => {
+                "the total bytes field must be populated on an initial packet"
+            }
+            Error::NonExtendedContinuationPacket => {
+                "cannot add a non-extended packet to a started (and incomplete) message"
+            }
             Error::NonzeroStartByte => "the start byte for an initial packet must be zero",
             Error::ParseInt(ref err) => err.description(),
             Error::UnsupportedPacketType(_) => "this packet type is not supported",
@@ -313,11 +327,16 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         use std::error::Error as _Error;
         match *self {
-            Error::ByteMismatch { received, start_byte } => {
-                write!(f,
-                       "received {} bytes, start byte is {}",
-                       received,
-                       start_byte)
+            Error::ByteMismatch {
+                received,
+                start_byte,
+            } => {
+                write!(
+                    f,
+                    "received {} bytes, start byte is {}",
+                    received,
+                    start_byte
+                )
             }
             Error::IdMismatch { packet, message } => {
                 write!(f, "packet id is {}, message id is {}", packet, message)

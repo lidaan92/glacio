@@ -2,6 +2,7 @@
 
 use {Error, Paginate, Result};
 use cameras::{CameraConfig, Config, camera, image};
+use glacio::Image;
 use iron::{IronResult, Request, Response, status};
 use iron::headers::Location;
 use json;
@@ -28,37 +29,59 @@ impl From<Config> for Cameras {
 impl Cameras {
     /// Returns a list of all configured cameras.
     pub fn summary(&self, request: &mut Request) -> IronResult<Response> {
-        json::response(self.config
-                           .cameras
-                           .iter()
-                           .map(|config| camera::Summary::new(request, config))
-                           .collect::<Vec<_>>())
+        json::response(
+            self.config
+                .cameras
+                .iter()
+                .map(|config| camera::Summary::new(request, config))
+                .collect::<Vec<_>>(),
+        )
     }
 
     /// Returns detail about one camera, as requested in the parameters.
     pub fn detail(&self, request: &mut Request) -> IronResult<Response> {
         let camera_config = iexpect!(self.camera_config(request));
-        json::response(itry!(camera::Detail::new(request, camera_config, &self.config)))
+        json::response(itry!(
+            camera::Detail::new(request, camera_config, &self.config)
+        ))
     }
 
     /// Returns a (paginated) list of images associated with the asked-for camera, starting with
     /// the most recent images.
     pub fn images(&self, request: &mut Request) -> IronResult<Response> {
         let camera_config = iexpect!(self.camera_config(request));
-        let mut images = itry!(camera_config.to_camera()
-                                   .and_then(|camera| camera.images().map_err(Error::from))
-                                   .and_then(|images| {
-                                                 images.map(|r| r.map_err(Error::from))
-                                                     .collect::<Result<Vec<_>>>()
-                                             }));
+        let mut images = itry!(self.camera_config_images(camera_config));
         images.sort_by(|a, b| b.cmp(a));
-        let image_summaries =
-            itry!(images.into_iter().paginate(request).and_then(|iter| {
-                                                                                      iter
-                      .map(|image| image::Summary::new(&image, &self.config))
-                      .collect::<Result<Vec<_>>>()
-                                                                                  }));
+        let image_summaries = itry!(images.into_iter().paginate(request).and_then(|iter| {
+            iter.map(|image| image::Summary::new(&image, &self.config))
+                .collect::<Result<Vec<_>>>()
+        }));
         json::response(image_summaries)
+    }
+
+    /// Returns the image nearest to the parsed datetime.
+    pub fn nearest_image(&self, request: &mut Request) -> IronResult<Response> {
+        use chrono::{DateTime, Utc};
+
+        let camera_config = iexpect!(self.camera_config(request));
+        let images = itry!(self.camera_config_images(camera_config));
+        let datetime: DateTime<Utc> = itry!(
+            request
+                .extensions
+                .get::<Router>()
+                .unwrap()
+                .find("datetime")
+                .unwrap()
+                .parse()
+        );
+        let image = iexpect!(images.iter().min_by_key(|image| {
+            image
+                .datetime()
+                .signed_duration_since(datetime)
+                .num_seconds()
+                .abs()
+        }));
+        json::response(itry!(image::Summary::new(&image, &self.config)))
     }
 
     /// Returns a redirect to the src url for the latest image for this camera.
@@ -74,7 +97,8 @@ impl Cameras {
     }
 
     fn name(&self, request: &mut Request) -> Option<String> {
-        request.extensions
+        request
+            .extensions
             .get::<Router>()
             .unwrap()
             .find("name")
@@ -83,11 +107,18 @@ impl Cameras {
 
     fn camera_config(&self, request: &mut Request) -> Option<&CameraConfig> {
         self.name(request).and_then(|name| {
-                                        self.config
-                                            .cameras
-                                            .iter()
-                                            .find(|config| config.name == name)
-                                    })
+            self.config.cameras.iter().find(
+                |config| config.name == name,
+            )
+        })
+    }
+
+    fn camera_config_images(&self, camera_config: &CameraConfig) -> Result<Vec<Image>> {
+        let camera = camera_config.to_camera()?;
+        camera
+            .images()?
+            .map(|r| r.map_err(Error::from))
+            .collect::<Result<Vec<_>>>()
     }
 }
 
@@ -105,12 +136,12 @@ mod tests {
         let mut config = Config::new();
         config.cameras.document_root = builder.root().to_string_lossy().into_owned();
         config.cameras.cameras.push(CameraConfig {
-                                        name: "ATLAS_CAM".to_string(),
-                                        description: "Great camera".to_string(),
-                                        path: format!("{}/ATLAS_CAM", builder.root().display()),
-                                        interval: 3.,
-                                        ..Default::default()
-                                    });
+            name: "ATLAS_CAM".to_string(),
+            description: "Great camera".to_string(),
+            path: format!("{}/ATLAS_CAM", builder.root().display()),
+            interval: 3.,
+            ..Default::default()
+        });
         Api::new(config).unwrap()
     }
 
@@ -126,37 +157,50 @@ mod tests {
         assert_eq!("ATLAS_CAM", camera.get("name").unwrap());
         assert_eq!("Great camera", camera.get("description").unwrap());
         assert_eq!(3.0, *camera.get("interval").unwrap());
-        assert_eq!("http://localhost:3000/cameras/ATLAS_CAM",
-                   camera.get("url").unwrap());
-        assert_eq!("http://localhost:3000/cameras/ATLAS_CAM/images",
-                   camera.get("images_url").unwrap());
-        assert_eq!("http://localhost:3000/cameras/ATLAS_CAM/images/latest/redirect",
-                   camera.get("latest_image_redirect_url").unwrap());
+        assert_eq!(
+            "http://localhost:3000/cameras/ATLAS_CAM",
+            camera.get("url").unwrap()
+        );
+        assert_eq!(
+            "http://localhost:3000/cameras/ATLAS_CAM/images",
+            camera.get("images_url").unwrap()
+        );
+        assert_eq!(
+            "http://localhost:3000/cameras/ATLAS_CAM/images/latest/redirect",
+            camera.get("latest_image_redirect_url").unwrap()
+        );
     }
 
     #[test]
     fn camera() {
-        let builder = ProjectBuilder::new("camera").file("ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
-                                                         "");
+        let builder =
+            ProjectBuilder::new("camera").file("ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg", "");
         builder.build();
         let handler = build_api(&builder);
-        let response = request::get("http://localhost:3000/cameras/ATLAS_CAM",
-                                    Headers::new(),
-                                    &handler)
-                .unwrap();
+        let response = request::get(
+            "http://localhost:3000/cameras/ATLAS_CAM",
+            Headers::new(),
+            &handler,
+        ).unwrap();
         let camera: Value = serde_json::from_str(&response::extract_body_to_string(response))
             .unwrap();
         assert_eq!("ATLAS_CAM", camera.get("name").unwrap());
         assert_eq!("Great camera", camera.get("description").unwrap());
-        assert_eq!("http://localhost:3000/cameras/ATLAS_CAM",
-                   camera.get("url").unwrap());
-        assert_eq!("http://localhost:3000/cameras/ATLAS_CAM/images",
-                   camera.get("images_url").unwrap());
+        assert_eq!(
+            "http://localhost:3000/cameras/ATLAS_CAM",
+            camera.get("url").unwrap()
+        );
+        assert_eq!(
+            "http://localhost:3000/cameras/ATLAS_CAM/images",
+            camera.get("images_url").unwrap()
+        );
         assert_eq!(3.0, *camera.get("interval").unwrap());
         let image = camera.get("latest_image").unwrap();
         assert_eq!("2017-08-06T15:25:00+00:00", image.get("datetime").unwrap());
-        assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
-                   image.get("url").unwrap());
+        assert_eq!(
+            "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152500.jpg",
+            image.get("url").unwrap()
+        );
     }
 
     #[test]
@@ -167,20 +211,25 @@ mod tests {
         }
         builder.build();
         let handler = build_api(&builder);
-        let response = request::get("http://localhost:3000/cameras/ATLAS_CAM/images?per_page=2&page=2",
-                                    Headers::new(),
-                                    &handler)
-                .unwrap();
+        let response = request::get(
+            "http://localhost:3000/cameras/ATLAS_CAM/images?per_page=2&page=2",
+            Headers::new(),
+            &handler,
+        ).unwrap();
         let images: Value = serde_json::from_str(&response::extract_body_to_string(response))
             .unwrap();
         let image = images.get(0).unwrap();
         assert_eq!("2017-08-06T15:25:07+00:00", image.get("datetime").unwrap());
-        assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152507.jpg",
-                   image.get("url").unwrap());
+        assert_eq!(
+            "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152507.jpg",
+            image.get("url").unwrap()
+        );
         let image = images.get(1).unwrap();
         assert_eq!("2017-08-06T15:25:06+00:00", image.get("datetime").unwrap());
-        assert_eq!("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152506.jpg",
-                   image.get("url").unwrap());
+        assert_eq!(
+            "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152506.jpg",
+            image.get("url").unwrap()
+        );
         assert_eq!(None, images.get(2));
     }
 
@@ -192,13 +241,17 @@ mod tests {
         }
         builder.build();
         let handler = build_api(&builder);
-        let response = request::get("http://localhost:3000/cameras/ATLAS_CAM/images/latest/redirect",
-                                    Headers::new(),
-                                    &handler)
-                .unwrap();
+        let response = request::get(
+            "http://localhost:3000/cameras/ATLAS_CAM/images/latest/redirect",
+            Headers::new(),
+            &handler,
+        ).unwrap();
         assert_eq!(Some(Status::Found), response.status);
-        assert_eq!(&Location("http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152509.jpg"
-                                 .to_string()),
-                   response.headers.get::<Location>().unwrap());
+        assert_eq!(
+            &Location(
+                "http://iridiumcam.lidar.io/ATLAS_CAM/ATLAS_CAM_20170806_152509.jpg".to_string(),
+            ),
+            response.headers.get::<Location>().unwrap()
+        );
     }
 }

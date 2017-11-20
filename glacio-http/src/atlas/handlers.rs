@@ -38,21 +38,25 @@ mod tests {
     fn status() {
         let mut config = Config::default();
         config.atlas.path = "../glacio/data".to_string();
-        config.atlas.efoy.cartridges = vec![EfoyCartridgeConfig {
-                                                name: "1.1".to_string(),
-                                                capacity: 8.0,
-                                            },
-                                            EfoyCartridgeConfig {
-                                                name: "1.2".to_string(),
-                                                capacity: 8.0,
-                                            }];
+        config.atlas.efoy.cartridges = vec![
+            EfoyCartridgeConfig {
+                name: "1.1".to_string(),
+                capacity: 8.0,
+            },
+            EfoyCartridgeConfig {
+                name: "1.2".to_string(),
+                capacity: 8.0,
+            },
+        ];
         let api = Api::new(config).unwrap();
         let response = request::get("http://localhost:3000/atlas/status", Headers::new(), &api)
             .unwrap();
         let status: Value = serde_json::from_str(&response::extract_body_to_string(response))
             .unwrap();
-        assert_eq!("2017-08-25T15:01:06+00:00",
-                   status["last_heartbeat_received"]);
+        assert_eq!(
+            "2017-08-25T15:01:06+00:00",
+            status["last_heartbeat_received"]
+        );
         assert_eq!("2017-08-25T12:02:08+00:00", status["last_scan"]["start"]);
         assert_eq!("2017-08-25T12:41:42+00:00", status["last_scan"]["end"]);
         assert_eq!(1, status["batteries"][0]["id"]);
@@ -74,13 +78,17 @@ mod tests {
         assert_eq!(26.86, status["efoys"][1]["voltage"]);
         assert_eq!(-0.04, status["efoys"][1]["current"]);
 
-        assert_eq!("2017-08-01T00:00:55+00:00",
-                   status["timeseries"]["datetimes"][0]);
+        assert_eq!(
+            "2017-08-01T00:00:55+00:00",
+            status["timeseries"]["datetimes"][0]
+        );
         assert_eq!(94.208, status["timeseries"]["states_of_charge"]["1"][0]);
         assert_eq!(-0.03, status["timeseries"]["efoy_current"]["1"][0]);
         assert_eq!(26.63, status["timeseries"]["efoy_voltage"]["1"][0]);
-        assert_eq!(76.61875,
-                   status["timeseries"]["efoy_fuel_percentage"]["1"][0]);
+        assert_eq!(
+            76.61875,
+            status["timeseries"]["efoy_fuel_percentage"]["1"][0]
+        );
         assert_eq!("auto off", status["timeseries"]["efoy_state"]["1"][0]);
         assert_eq!(true, status["timeseries"]["is_riegl_switch_on"][0]);
     }

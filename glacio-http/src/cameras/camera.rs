@@ -42,7 +42,9 @@ impl Summary {
         Summary {
             name: camera.name.clone(),
             description: camera.description.clone(),
-            url: url_for!(request, "camera", "name" => camera.name.clone()).as_ref().to_string(),
+            url: url_for!(request, "camera", "name" => camera.name.clone())
+                .as_ref()
+                .to_string(),
             images_url: url_for!(request, "camera-images", "name" => camera.name.clone())
                 .as_ref()
                 .to_string(),
@@ -57,26 +59,30 @@ impl Summary {
 
 impl Detail {
     /// Creates a new detail from a configuration and a request.
-    pub fn new(request: &mut Request,
-               camera_config: &CameraConfig,
-               config: &Config)
-               -> Result<Detail> {
+    pub fn new(
+        request: &mut Request,
+        camera_config: &CameraConfig,
+        config: &Config,
+    ) -> Result<Detail> {
         let summary = Summary::new(request, camera_config);
         let camera = camera_config.to_camera()?;
-        let mut images = camera.images()?
+        let mut images = camera
+            .images()?
             .filter_map(|result| result.ok())
             .collect::<Vec<_>>();
         if images.is_empty() {
-            return Err(Error::Config(format!("No images found for camera: {:?}", camera)));
+            return Err(Error::Config(
+                format!("No images found for camera: {:?}", camera),
+            ));
         }
         images.sort();
         Ok(Detail {
-               name: summary.name,
-               description: summary.description,
-               url: summary.url,
-               images_url: summary.images_url,
-               latest_image: image::Summary::new(&images.pop().unwrap(), &config)?,
-               interval: summary.interval,
-           })
+            name: summary.name,
+            description: summary.description,
+            url: summary.url,
+            images_url: summary.images_url,
+            latest_image: image::Summary::new(&images.pop().unwrap(), &config)?,
+            interval: summary.interval,
+        })
     }
 }

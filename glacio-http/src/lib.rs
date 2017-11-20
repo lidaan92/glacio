@@ -7,6 +7,7 @@
         trivial_numeric_casts, unsafe_code, unstable_features, unused_import_braces,
         unused_qualifications)]
 
+extern crate chrono;
 extern crate glacio;
 #[macro_use]
 extern crate iron;

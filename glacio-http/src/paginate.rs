@@ -73,9 +73,9 @@ impl Pagination {
             per_page = DEFAULT_PER_PAGE;
         }
         Ok(Pagination {
-               page: page,
-               per_page: per_page,
-           })
+            page: page,
+            per_page: per_page,
+        })
     }
 
     pub fn skip(&self) -> usize {

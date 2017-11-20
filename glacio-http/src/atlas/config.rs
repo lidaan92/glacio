@@ -50,11 +50,11 @@ impl Config {
     /// let heartbeats = config.heartbeats().unwrap();
     /// ```
     pub fn heartbeats(&self) -> Result<Vec<Heartbeat>> {
-        let heartbeats = self.read_sbd()?
-            .flat_map(|r| r.ok())
-            .collect::<Vec<_>>();
+        let heartbeats = self.read_sbd()?.flat_map(|r| r.ok()).collect::<Vec<_>>();
         if heartbeats.is_empty() {
-            Err(Error::Config(format!("No heartbeats in configured path: {}", self.path)))
+            Err(Error::Config(
+                format!("No heartbeats in configured path: {}", self.path),
+            ))
         } else {
             Ok(heartbeats)
         }

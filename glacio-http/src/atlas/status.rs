@@ -98,18 +98,21 @@ impl Status {
             timeseries.process(&heartbeat)?;
         }
         let heartbeat = heartbeats.pop().unwrap();
-        let batteries = heartbeat.batteries
+        let batteries = heartbeat
+            .batteries
             .iter()
-            .map(|(&i, battery)| BatteryStatus::new(i, battery.state_of_charge))
+            .map(|(&i, battery)| {
+                BatteryStatus::new(i, battery.state_of_charge)
+            })
             .collect();
         Ok(Status {
-               last_heartbeat_received: heartbeat.datetime.to_rfc3339(),
-               batteries: batteries,
-               efoys: timeseries.efoys(&heartbeat),
-               timeseries: timeseries,
-               is_riegl_switch_on: heartbeat.is_riegl_switch_on,
-               last_scan: LastScan::new(&heartbeat),
-           })
+            last_heartbeat_received: heartbeat.datetime.to_rfc3339(),
+            batteries: batteries,
+            efoys: timeseries.efoys(&heartbeat),
+            timeseries: timeseries,
+            is_riegl_switch_on: heartbeat.is_riegl_switch_on,
+            last_scan: LastScan::new(&heartbeat),
+        })
     }
 }
 
@@ -133,11 +136,11 @@ impl EfoyStatus {
             current: heartbeat.current,
             cartridges: efoy.iter()
                 .map(|cartridge| {
-                         CartridgeStatus {
-                             name: cartridge.name().to_string(),
-                             fuel_percentage: cartridge.fuel_percentage(),
-                         }
-                     })
+                    CartridgeStatus {
+                        name: cartridge.name().to_string(),
+                        fuel_percentage: cartridge.fuel_percentage(),
+                    }
+                })
                 .collect(),
         }
     }
@@ -145,7 +148,8 @@ impl EfoyStatus {
 
 impl Timeseries {
     fn new(config: &Config, heartbeat: &Heartbeat) -> Result<Timeseries> {
-        let states_of_charge = heartbeat.batteries
+        let states_of_charge = heartbeat
+            .batteries
             .keys()
             .map(|&i| (i, Vec::new()))
             .collect();
@@ -163,44 +167,39 @@ impl Timeseries {
         }
 
         Ok(Timeseries {
-               datetimes: Vec::new(),
-               states_of_charge: states_of_charge,
-               efoy_current: efoy_current,
-               efoy_fuel_percentage: efoy_fuel_percentage,
-               efoy_voltage: efoy_voltage,
-               efoy_state: efoy_state,
-               is_riegl_switch_on: Vec::new(),
-               efoys: efoys,
-           })
+            datetimes: Vec::new(),
+            states_of_charge: states_of_charge,
+            efoy_current: efoy_current,
+            efoy_fuel_percentage: efoy_fuel_percentage,
+            efoy_voltage: efoy_voltage,
+            efoy_state: efoy_state,
+            is_riegl_switch_on: Vec::new(),
+            efoys: efoys,
+        })
     }
 
     fn process(&mut self, heartbeat: &Heartbeat) -> Result<()> {
         self.datetimes.push(heartbeat.datetime.to_rfc3339());
         for (i, battery) in &heartbeat.batteries {
-            self.states_of_charge
-                .get_mut(i)
-                .unwrap()
-                .push(battery.state_of_charge);
+            self.states_of_charge.get_mut(i).unwrap().push(
+                battery.state_of_charge,
+            );
         }
         for (i, heartbeat) in &heartbeat.efoys {
-            self.efoy_current
-                .get_mut(i)
-                .unwrap()
-                .push(heartbeat.current);
-            self.efoy_voltage
-                .get_mut(i)
-                .unwrap()
-                .push(heartbeat.voltage);
-            self.efoy_state
-                .get_mut(i)
-                .unwrap()
-                .push(String::from(heartbeat.state));
+            self.efoy_current.get_mut(i).unwrap().push(
+                heartbeat.current,
+            );
+            self.efoy_voltage.get_mut(i).unwrap().push(
+                heartbeat.voltage,
+            );
+            self.efoy_state.get_mut(i).unwrap().push(String::from(
+                heartbeat.state,
+            ));
             let mut efoy = self.efoys.get_mut(i).unwrap();
             efoy.process(heartbeat)?;
-            self.efoy_fuel_percentage
-                .get_mut(i)
-                .unwrap()
-                .push(efoy.total_fuel_percentage());
+            self.efoy_fuel_percentage.get_mut(i).unwrap().push(
+                efoy.total_fuel_percentage(),
+            );
         }
         self.is_riegl_switch_on.push(heartbeat.is_riegl_switch_on);
         Ok(())

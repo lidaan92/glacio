@@ -43,35 +43,53 @@ impl Api {
         router.get("/", root, "root");
 
         let cameras = Cameras::from(config.cameras);
-        router.get("/cameras",
-                   {
-                       let cameras = cameras.clone();
-                       move |r: &mut Request| cameras.summary(r)
-                   },
-                   "cameras");
-        router.get("/cameras/:name",
-                   {
-                       let cameras = cameras.clone();
-                       move |r: &mut Request| cameras.detail(r)
-                   },
-                   "camera");
-        router.get("/cameras/:name/images",
-                   {
-                       let cameras = cameras.clone();
-                       move |r: &mut Request| cameras.images(r)
-                   },
-                   "camera-images");
-        router.get("/cameras/:name/images/latest/redirect",
-                   {
-                       let cameras = cameras.clone();
-                       move |r: &mut Request| cameras.latest_image_redirect(r)
-                   },
-                   "camera-latest-image-redirect");
+        router.get(
+            "/cameras",
+            {
+                let cameras = cameras.clone();
+                move |r: &mut Request| cameras.summary(r)
+            },
+            "cameras",
+        );
+        router.get(
+            "/cameras/:name",
+            {
+                let cameras = cameras.clone();
+                move |r: &mut Request| cameras.detail(r)
+            },
+            "camera",
+        );
+        router.get(
+            "/cameras/:name/images",
+            {
+                let cameras = cameras.clone();
+                move |r: &mut Request| cameras.images(r)
+            },
+            "camera-images",
+        );
+        router.get(
+            "/cameras/:name/images/nearest/:datetime",
+            {
+                let cameras = cameras.clone();
+                move |r: &mut Request| cameras.nearest_image(r)
+            },
+            "camera-nearest-image",
+        );
+        router.get(
+            "/cameras/:name/images/latest/redirect",
+            {
+                let cameras = cameras.clone();
+                move |r: &mut Request| cameras.latest_image_redirect(r)
+            },
+            "camera-latest-image-redirect",
+        );
 
         let atlas = Atlas::from(config.atlas);
-        router.get("/atlas/status",
-                   move |r: &mut Request| atlas.status(r),
-                   "atlas-status");
+        router.get(
+            "/atlas/status",
+            move |r: &mut Request| atlas.status(r),
+            "atlas-status",
+        );
 
         let mut chain = Chain::new(router);
         chain.link(Logger::new(None));
@@ -87,13 +105,15 @@ impl Handler for Api {
         self.chain
             .handle(request)
             .map(|mut response| {
-                     response.headers.set(AccessControlAllowOrigin::Any);
-                     response
-                 })
+                response.headers.set(AccessControlAllowOrigin::Any);
+                response
+            })
             .map_err(|mut iron_error| {
-                         iron_error.response.headers.set(AccessControlAllowOrigin::Any);
-                         iron_error
-                     })
+                iron_error.response.headers.set(
+                    AccessControlAllowOrigin::Any,
+                );
+                iron_error
+            })
     }
 }
 
@@ -105,9 +125,11 @@ impl AfterMiddleware for Custom404 {
         use iron::headers::ContentType;
 
         if let Some(_) = err.error.downcast::<NoRoute>() {
-            let mut response =
-                Response::with((status::NotFound,
-                                serde_json::to_string(&json!({"message": "Not found"})).unwrap()));
+            let mut response = Response::with((
+                status::NotFound,
+                serde_json::to_string(&json!({"message": "Not found"}))
+                    .unwrap(),
+            ));
             response.headers.set(ContentType::json());
             Ok(response)
         } else {

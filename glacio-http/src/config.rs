@@ -27,7 +27,9 @@ impl Config {
     /// ```
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Config> {
         let mut s = String::new();
-        File::open(path).and_then(|mut read| read.read_to_string(&mut s))?;
+        File::open(path).and_then(
+            |mut read| read.read_to_string(&mut s),
+        )?;
         toml::from_str(&s).map_err(Error::from)
     }
 

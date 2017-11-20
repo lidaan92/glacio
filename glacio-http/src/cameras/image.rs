@@ -16,10 +16,8 @@ impl Summary {
     pub fn new(image: &Image, config: &Config) -> Result<Summary> {
         let server = config.server()?;
         Ok(Summary {
-               datetime: image.datetime().to_rfc3339(),
-               url: server.url_for(image)?
-                   .as_ref()
-                   .to_string(),
-           })
+            datetime: image.datetime().to_rfc3339(),
+            url: server.url_for(image)?.as_ref().to_string(),
+        })
     }
 }

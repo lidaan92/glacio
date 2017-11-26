@@ -40,8 +40,13 @@ pub struct Heartbeat {
 pub enum State {
     /// The efoy is in auto mode, and is off.
     AutoOff,
+
     /// The efoy is in auto mode, and is on.
     AutoOn,
+
+    /// The efoy is in an error state.
+    Error,
+
     /// The efoy is heating itself to avoid freezing.
     FreezeProtection,
 }
@@ -108,6 +113,7 @@ impl FromStr for State {
         match s {
             "auto off" => Ok(State::AutoOff),
             "auto on" => Ok(State::AutoOn),
+            "error" => Ok(State::Error),
             "freeze protection" => Ok(State::FreezeProtection),
             _ => Err(Error::UnknownEfoyState(s.to_string())),
         }
@@ -119,6 +125,7 @@ impl From<State> for String {
         match efoy_state {
             State::AutoOff => "auto off".to_string(),
             State::AutoOn => "auto on".to_string(),
+            State::Error => "error".to_string(),
             State::FreezeProtection => "freeze protection".to_string(),
         }
     }

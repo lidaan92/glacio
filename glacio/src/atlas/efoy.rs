@@ -260,8 +260,12 @@ impl Efoy {
     pub fn process(&mut self, heartbeat: &Heartbeat) -> Result<()> {
         if let Some(cartridge) = self.cartridge(&heartbeat.cartridge) {
             if cartridge.emptied {
-                return Err(Error::EmptyCartridge(cartridge.name.clone()));
+                // FIXME
+                return Ok(());
+                // return Err(Error::EmptyCartridge(cartridge.name.clone()));
             }
+        } else if heartbeat.cartridge.contains("->") {
+            return Ok(()); // Transition heartbeat, just ignore it
         } else {
             return Err(Error::CartridgeName(heartbeat.cartridge.to_string()));
         }

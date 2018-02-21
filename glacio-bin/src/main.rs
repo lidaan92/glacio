@@ -20,7 +20,9 @@ fn main() {
     } else if let Some(matches) = matches.subcommand_matches("heartbeats") {
         let config = Config::from_path(matches.value_of("CONFIG").unwrap()).unwrap();
         for heartbeat in config.atlas.read_sbd().unwrap() {
-            println!("{:?}", heartbeat);
+            if heartbeat.is_ok() {
+                println!("{:?}", heartbeat.unwrap());
+            }
         }
     }
 }

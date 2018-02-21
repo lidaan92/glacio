@@ -32,7 +32,7 @@ lazy_static! {
 }
 
 /// Data provided when the scanner powers on.
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize)]
 pub struct ScannerPowerOn {
     /// The date and time the scanner was powered on.
     pub datetime: DateTime<Utc>,
@@ -47,7 +47,7 @@ pub struct ScannerPowerOn {
 }
 
 /// A log of the end of a scan.
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize)]
 pub struct ScanStop {
     /// The date and time the scan stopped.
     pub datetime: DateTime<Utc>,

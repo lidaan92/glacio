@@ -82,6 +82,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "num 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.38 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -168,6 +169,8 @@ dependencies = [
  "lazy_static 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sbd 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_derive 1.0.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -180,6 +183,7 @@ dependencies = [
  "glacio 0.1.0",
  "glacio-http 0.1.0",
  "iron 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

@@ -3,6 +3,7 @@ extern crate clap;
 extern crate env_logger;
 extern crate glacio_http;
 extern crate iron;
+extern crate serde_json;
 
 fn main() {
     use glacio_http::{Api, Config};
@@ -19,10 +20,12 @@ fn main() {
         Iron::new(api).http(addr).unwrap();
     } else if let Some(matches) = matches.subcommand_matches("heartbeats") {
         let config = Config::from_path(matches.value_of("CONFIG").unwrap()).unwrap();
-        for heartbeat in config.atlas.read_sbd().unwrap() {
-            if heartbeat.is_ok() {
-                println!("{:?}", heartbeat.unwrap());
-            }
-        }
+        let heartbeats = config
+            .atlas
+            .read_sbd()
+            .unwrap()
+            .filter_map(|heartbeat| heartbeat.ok())
+            .collect::<Vec<_>>();
+        println!("{}", serde_json::to_string(&heartbeats).unwrap());
     }
 }

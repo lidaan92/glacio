@@ -4,7 +4,7 @@ use atlas::{Error, Result};
 use std::str::FromStr;
 
 /// A battery's heartbeat information.
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize)]
 pub struct Heartbeat {
     /// The state of charge of a battery, as a percentage out of 100.
     pub state_of_charge: f32,

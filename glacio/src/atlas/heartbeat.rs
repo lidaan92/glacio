@@ -27,7 +27,7 @@ lazy_static! {
 ///
 /// These heartbeats are transmitted via Iridium SBD. Because of the SBD message length
 /// restriction, heartbeats may come in one or more messages, and might have to be pieced together.
-#[derive(Clone, Debug, PartialOrd)]
+#[derive(Clone, Debug, PartialOrd, Serialize)]
 pub struct Heartbeat {
     /// The version of heartbeat message.
     pub version: u8,

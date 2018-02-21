@@ -21,6 +21,9 @@ extern crate chrono;
 extern crate lazy_static;
 extern crate regex;
 extern crate sbd;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate url;
 
 #[macro_use]

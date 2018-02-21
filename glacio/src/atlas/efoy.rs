@@ -19,7 +19,7 @@ lazy_static! {
 }
 
 /// Instantaneous status report from one of our EFOY fuel cell systems.
-#[derive(Clone, Debug, Default, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Default, PartialEq, PartialOrd, Serialize)]
 pub struct Heartbeat {
     /// The state of the efoy system at time of heartbeat.
     pub state: State,
@@ -36,7 +36,7 @@ pub struct Heartbeat {
 }
 
 /// The operating state/mode of an EFOY fuel cell system.
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize)]
 pub enum State {
     /// The efoy is in auto mode, and is off.
     AutoOff,

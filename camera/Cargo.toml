@@ -1,0 +1,9 @@
+[package]
+name = "camera"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+chrono = "0.4"
+failure = "0.1"
+walkdir = "2"

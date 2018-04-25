@@ -81,3 +81,9 @@ name = "HEL_BERGCAM2_2"
 description = "HEL_BERGCAM2 is a dual-camera system looking at the Sermilik Fjord. HEL_BERGCAM2_2 is the rightward (southward) looking camera of the pair."
 path = "/home/iridiumcam/StarDot/HEL_BERGCAM2/StarDot2"
 interval = 3
+
+[[cameras.cameras]]
+name = "COLUMBIA"
+description = "A camera located at the Columbia Glacier in Alaska."
+path = "/home/iridiumcam/StarDot/COLUMBIA"
+interval = 2
